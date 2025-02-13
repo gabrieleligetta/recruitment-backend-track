@@ -1,18 +1,19 @@
 services:
-  # PHP-FPM service
   php:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
+      target: development  # <---- Using the new development stage
     volumes:
-      - ./:/var/www/html
-    env_file:
-      - ./src/.env
+      - ./src:/app  # Mount code for hot-reloading
+    ports:
+      - "8000:8000" # Laravel default port
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
     networks:
       - app-network
 
-  # Nginx service
   nginx:
     image: nginx:stable-alpine
     depends_on:
@@ -25,7 +26,6 @@ services:
     networks:
       - app-network
 
-  # Database service (PostgreSQL)
   db:
     image: postgres:15
     environment:

@@ -3,7 +3,7 @@
 # ──────────────────────────────────────────────────────────
 FROM php:8.3-cli AS build
 
-# Install system dependencies (git, zip, etc.) and required PHP extensions
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     zip \
@@ -19,16 +19,16 @@ COPY --from=composer:2.5 /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /app
 
-# --- Leverage layer caching: Copy composer files first ---
+# Copy Composer files first for caching
 COPY src/composer.json src/composer.lock ./
 
-# Install dependencies (production mode). Use --no-dev if you want to skip dev dependencies
+# Install dependencies
 RUN composer install --no-dev --no-scripts --no-autoloader
 
-# Now copy the full Laravel project
+# Copy full Laravel project
 COPY src/ /app/
 
-# Generate optimized autoload files
+# Optimize autoload
 RUN composer dump-autoload --optimize
 
 
@@ -40,31 +40,50 @@ FROM build AS test
 # Install dev dependencies for testing
 RUN composer install --no-scripts
 
-# Run the test suite (e.g. PHPUnit, Pest, etc.)
-# Ensure the path is correct for Laravel tests
+# Run the test suite
 RUN vendor/bin/phpunit
 
 
 # ──────────────────────────────────────────────────────────
-# 3. PRODUCTION STAGE
+# 3. DEVELOPMENT STAGE
+# ──────────────────────────────────────────────────────────
+FROM build AS development
+
+# Install additional dependencies for debugging & development
+RUN apt-get update && apt-get install -y \
+    nano \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for development
+ENV APP_ENV=local
+ENV APP_DEBUG=true
+ENV XDEBUG_MODE=debug
+
+# Expose ports for development
+EXPOSE 8000
+
+# Start Laravel in development mode
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+
+
+# ──────────────────────────────────────────────────────────
+# 4. PRODUCTION STAGE
 # ──────────────────────────────────────────────────────────
 FROM php:8.3-fpm-alpine AS production
 
-# Install only the essential PHP extensions for production
+# Install only essential PHP extensions
 RUN apk update && apk add --no-cache \
     libzip-dev \
     postgresql-dev \
     libpq \
     && docker-php-ext-install pdo_pgsql zip
 
-# Create the directory for the application
+# Set working directory
 WORKDIR /var/www/html
 
 # Copy the application from the build stage
 COPY --from=build /app /var/www/html
 
-# (Laravel Example) Adjust permissions for storage and cache if necessary
-# RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
-# Run php-fpm in the foreground
+# Start PHP-FPM in production mode
 CMD ["php-fpm"]
