@@ -29,6 +29,8 @@ services:
       POSTGRES_DB: invoices
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: wemJag4]5iS}5l0mIL}8
+    ports:
+      - "5439:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
