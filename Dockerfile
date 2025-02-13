@@ -1,7 +1,7 @@
 # ──────────────────────────────────────────────────────────
-# 1. BUILD STAGE
+# BASE STAGE
 # ──────────────────────────────────────────────────────────
-FROM php:8.3-cli AS build
+FROM php:8.3-fpm AS base
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libzip-dev \
     libpq-dev \
+    nano \
+    curl \
     && docker-php-ext-install pdo_pgsql zip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -17,73 +19,54 @@ RUN apt-get update && apt-get install -y \
 COPY --from=composer:2.5 /usr/bin/composer /usr/bin/composer
 
 # Set working directory
-WORKDIR /app
+WORKDIR /var/www/invoices_app
 
-# Copy Composer files first for caching
+# Copy Composer files first to leverage caching
 COPY src/composer.json src/composer.lock ./
 
-# Install dependencies
-RUN composer install --no-dev --no-scripts --no-autoloader
+# Build argument to toggle dev or prod dependencies
+ARG APP_ENV=production
+RUN echo "Building with APP_ENV=$APP_ENV"
 
-# Copy full Laravel project
-COPY src/ /app/
+# Install dependencies (conditional dev vs. prod)
+RUN if [ "$APP_ENV" = "development" ]; then \
+    composer install --no-scripts; \
+  else \
+    composer install --no-dev --no-scripts --no-autoloader; \
+  fi
+
+# Copy the full Laravel app
+COPY src/ /var/www/invoices_app
 
 # Optimize autoload
 RUN composer dump-autoload --optimize
 
-
 # ──────────────────────────────────────────────────────────
-# 2. TEST STAGE
+# DEVELOPMENT STAGE
 # ──────────────────────────────────────────────────────────
-FROM build AS test
+FROM base AS development
 
-# Install dev dependencies for testing
-RUN composer install --no-scripts
-
-# Run the test suite
-RUN vendor/bin/phpunit
-
-
-# ──────────────────────────────────────────────────────────
-# 3. DEVELOPMENT STAGE
-# ──────────────────────────────────────────────────────────
-FROM build AS development
-
-# Install additional dependencies for debugging & development
-RUN apt-get update && apt-get install -y \
-    nano \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set environment variables for development
-ENV APP_ENV=local
+# Set environment for dev
+ENV APP_ENV=development
 ENV APP_DEBUG=true
-ENV XDEBUG_MODE=debug
 
-# Expose ports for development
-EXPOSE 8000
+# Fix storage permissions if needed
+RUN chown -R www-data:www-data /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache \
+    && chmod -R 775 /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache
 
-# Start Laravel in development mode
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
-
+# Command for dev: using php-fpm
+CMD ["php-fpm"]
 
 # ──────────────────────────────────────────────────────────
-# 4. PRODUCTION STAGE
+# PRODUCTION STAGE
 # ──────────────────────────────────────────────────────────
-FROM php:8.3-fpm-alpine AS production
+FROM base AS production
 
-# Install only essential PHP extensions
-RUN apk update && apk add --no-cache \
-    libzip-dev \
-    postgresql-dev \
-    libpq \
-    && docker-php-ext-install pdo_pgsql zip
+ENV APP_ENV=production
+ENV APP_DEBUG=false
 
-# Set working directory
-WORKDIR /var/www/html
+# Fix storage permissions if needed
+RUN chown -R www-data:www-data /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache \
+    && chmod -R 775 /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache
 
-# Copy the application from the build stage
-COPY --from=build /app /var/www/html
-
-# Start PHP-FPM in production mode
 CMD ["php-fpm"]
