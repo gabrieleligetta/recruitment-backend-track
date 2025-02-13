@@ -1,0 +1,45 @@
+services:
+  # PHP-FPM service
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    volumes:
+      - ./:/var/www/html
+    env_file:
+      - ./src/.env
+    networks:
+      - app-network
+
+  # Nginx service
+  nginx:
+    image: nginx:stable-alpine
+    depends_on:
+      - php
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+
+  # Database service (PostgreSQL)
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: invoices
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: wemJag4]5iS}5l0mIL}8
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,16 @@
+# Ignore git
+.git
+.gitignore
+
+# Node modules (if you have a front-end part you don't need in the image)
+node_modules
+
+# Tests folder (if you don't want to ship tests to production)
+tests
+
+# Laravel vendor if you always do Composer install inside Docker
+vendor
+
+# IDE or OS-related files
+*.log
+.DS_Store
