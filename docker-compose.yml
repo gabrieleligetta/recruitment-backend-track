@@ -3,11 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: development  # <---- Using the new development stage
+      target: development
     volumes:
-      - ./src:/app  # Mount code for hot-reloading
+      - ./src:/app
     ports:
-      - "8000:8000" # Laravel default port
+      - "8000:8000"
     environment:
       APP_ENV: local
       APP_DEBUG: true
