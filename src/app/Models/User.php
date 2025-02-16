@@ -4,11 +4,22 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
+
+/**
+ * App\Models\User
+ *
+ * @method static User create(array $attributes)
+ * @method static User|null find(mixed $id)
+ * @method Builder|User all()
+ * @method bool update(array $attributes = [], array $options = [])
+ * @method bool delete()
+ */
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */

@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Links to tax_profiles table
             $table->foreignId('tax_profile_id')->constrained('tax_profiles')->onDelete('cascade'); // Links to tax_profiles table
             $table->string('invoice_number')->unique();
             $table->string('description');
