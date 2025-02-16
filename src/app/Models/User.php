@@ -14,6 +14,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 /**
  * App\Models\User
  *
+ * @property string $role
  * @method static User create(array $attributes)
  * @method static User|null find(mixed $id)
  * @method Builder|User all()
@@ -41,9 +42,10 @@ class User extends Authenticatable implements JWTSubject
      *
      * @var list<string>
      */
-    protected $hidden = [
+    protected     $hidden = [
         'password',
         'remember_token',
+        'role'
     ];
 
     public function getJWTIdentifier()
@@ -59,6 +61,11 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    public function isAdministrator(): bool
+    {
+        return $this->role === 'admin';
     }
 
     /**

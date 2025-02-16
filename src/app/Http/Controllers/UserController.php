@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\UserService;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
@@ -15,9 +17,6 @@ class UserController extends Controller
     {
         $this->userService = $userService;
         $this->middleware('auth:api');
-        $this->middleware('access:open')->only(['index']);
-        $this->middleware('access:self')->only(['show', 'update']);
-        $this->middleware('access:admin')->only(['destroy']);
     }
 
     // GET /api/user?name=...&email=...&limit=...
@@ -41,7 +40,10 @@ class UserController extends Controller
     // PUT /api/user/{id}
     public function update(Request $request, $id)
     : JsonResponse {
-         $validatedData = $request->validate([
+
+        Gate::allowIf(fn (User $authUser) => $authUser->isAdministrator() || $authUser->id == $id);
+
+        $validatedData = $request->validate([
              'name'     => 'sometimes|required|string|max:255',
              'email'    => 'sometimes|required|email|unique:users,email,' . $id,
              'password' => 'sometimes|required|string|min:6',
@@ -57,6 +59,7 @@ class UserController extends Controller
     // DELETE /api/user/{id}
     public function destroy($id)
     : JsonResponse {
+        Gate::denyIf(fn (User $authUser) => !$authUser->isAdministrator());
          $deleted = $this->userService->delete($id);
          if (!$deleted) {
              return response()->json(['message' => 'User not found'], ResponseAlias::HTTP_NOT_FOUND);
