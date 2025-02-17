@@ -37,6 +37,21 @@ class UserController extends Controller
          return response()->json($user, ResponseAlias::HTTP_OK);
     }
 
+    // POST /api/user
+    public function store(Request $request)
+    : JsonResponse {
+        Gate::allowIf(fn (User $authUser) => $authUser->isAdministrator());
+
+        $validatedData = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $user = $this->userService->create($validatedData);
+        return response()->json($user, ResponseAlias::HTTP_CREATED);
+    }
+
     // PUT /api/user/{id}
     public function update(Request $request, $id)
     : JsonResponse {

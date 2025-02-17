@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\TaxProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,3 +17,5 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::apiResource('user', UserController::class);
+Route::apiResource('tax_profile', TaxProfileController::class);
+Route::apiResource('invoice', InvoiceController::class);

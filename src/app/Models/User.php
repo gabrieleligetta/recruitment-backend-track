@@ -14,6 +14,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 /**
  * App\Models\User
  *
+ * @property int $id
  * @property string $role
  * @method static User create(array $attributes)
  * @method static User|null find(mixed $id)
@@ -25,6 +26,8 @@ class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    public mixed $id;
 
     /**
      * The attributes that are mass assignable.
