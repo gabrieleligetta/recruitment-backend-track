@@ -18,31 +18,34 @@ class TaxProfileController extends Controller
         $this->taxProfileService = $taxProfileService;
     }
 
-    public function index(Request $request): JsonResponse
+    // POST /api/tax-profiles/list
+    public function list(Request $request): JsonResponse
     {
-        $filters = $request->only(['tax_id', 'company_name', 'limit']);
-        $authUser = $this->getAuthUser();
-        // Non-admins can only see their own tax profiles.
-        if ($authUser->role !== 'admin') {
-            $filters['user_id'] = $authUser->id;
+        // Prefer JSON payload if available.
+        $data = $request->json()->all();
+        if (empty($data)) {
+            // Fall back to query parameters.
+            $data = $request->query();
         }
-        $profiles = $this->taxProfileService->getAll($filters);
-        return response()->json($profiles, ResponseAlias::HTTP_OK);
-    }
 
-    /**
-     * Retrieve the currently authenticated user, typed as User.
-     *
-     * @return User
-     */
-    private function getAuthUser(): User
-    {
-        /** @var User $user */
-        $user = auth()->user();
-        return $user;
-    }
+        // If using the JSON structure, merge filters and sorting into a single array.
+        $params = [];
+        if (isset($data['filters']) && is_array($data['filters'])) {
+            $params = array_merge($params, $data['filters']);
+        }
+        if (isset($data['sort']) && is_array($data['sort'])) {
+            // We'll reserve 'sort' as two keys: sort_by and sort_dir.
+            $params['sort_by'] = $data['sort']['field'] ?? null;
+            $params['sort_dir'] = $data['sort']['direction'] ?? 'asc';
+        }
+        if (isset($data['limit'])) {
+            $params['limit'] = $data['limit'];
+        }
 
-    // GET /api/tax-profiles?tax_id=...&company_name=...&limit=...
+        // Let the service handle filtering/sorting.
+        $users = $this->taxProfileService->getAll($params);
+        return response()->json($users, ResponseAlias::HTTP_OK);
+    }
 
     public function show($id): JsonResponse
     {
@@ -55,7 +58,7 @@ class TaxProfileController extends Controller
         return response()->json($profile, ResponseAlias::HTTP_OK);
     }
 
-    // GET /api/tax-profiles/{id}
+    // GET /api/tax-profiles?tax_id=...&company_name=...&limit=...
 
     /**
      * Authorize that the current user owns the resource or is an admin.
@@ -69,6 +72,20 @@ class TaxProfileController extends Controller
         if ($authUser->role !== 'admin' && $authUser->id !== $resourceUserId) {
             abort(ResponseAlias::HTTP_FORBIDDEN, 'Forbidden');
         }
+    }
+
+    // GET /api/tax-profiles/{id}
+
+    /**
+     * Retrieve the currently authenticated user, typed as User.
+     *
+     * @return User
+     */
+    private function getAuthUser(): User
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        return $user;
     }
 
     // POST /api/tax-profiles

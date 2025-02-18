@@ -17,5 +17,8 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::apiResource('user', UserController::class);
+Route::post('user/list', [UserController::class, 'list']);
 Route::apiResource('tax_profile', TaxProfileController::class);
+Route::post('tax_profile', [TaxProfileController::class, 'list']);
 Route::apiResource('invoice', InvoiceController::class);
+Route::post('invoice', [InvoiceController::class, 'list']);

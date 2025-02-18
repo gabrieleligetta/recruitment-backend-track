@@ -19,12 +19,33 @@ class UserController extends Controller
         $this->middleware('auth:api');
     }
 
-    // GET /api/user?name=...&email=...&limit=...
-    public function index(Request $request)
-    : JsonResponse {
-         $filters = $request->only(['name', 'email', 'limit']);
-         $users = $this->userService->getAll($filters);
-         return response()->json($users, ResponseAlias::HTTP_OK);
+    // POST /api/user/list
+    public function list(Request $request): JsonResponse
+    {
+        // Prefer JSON payload if available.
+        $data = $request->json()->all();
+        if (empty($data)) {
+            // Fall back to query parameters.
+            $data = $request->query();
+        }
+
+        // If using the JSON structure, merge filters and sorting into a single array.
+        $params = [];
+        if (isset($data['filters']) && is_array($data['filters'])) {
+            $params = array_merge($params, $data['filters']);
+        }
+        if (isset($data['sort']) && is_array($data['sort'])) {
+            // We'll reserve 'sort' as two keys: sort_by and sort_dir.
+            $params['sort_by'] = $data['sort']['field'] ?? null;
+            $params['sort_dir'] = $data['sort']['direction'] ?? 'asc';
+        }
+        if (isset($data['limit'])) {
+            $params['limit'] = $data['limit'];
+        }
+
+        // Let the service handle filtering/sorting.
+        $users = $this->userService->getAll($params);
+        return response()->json($users, ResponseAlias::HTTP_OK);
     }
 
     // GET /api/user/{id}

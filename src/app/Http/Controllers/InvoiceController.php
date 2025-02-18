@@ -18,31 +18,34 @@ class InvoiceController extends Controller
         $this->invoiceService = $invoiceService;
     }
 
-    public function index(Request $request): JsonResponse
+    // POST /api/invoices/list
+    public function list(Request $request): JsonResponse
     {
-        $filters = $request->only(['invoice_number', 'status', 'limit']);
-        $authUser = $this->getAuthUser();
-        // Non-admin users see only their own invoices.
-        if ($authUser->role !== 'admin') {
-            $filters['user_id'] = $authUser->id;
+        // Prefer JSON payload if available.
+        $data = $request->json()->all();
+        if (empty($data)) {
+            // Fall back to query parameters.
+            $data = $request->query();
         }
-        $invoices = $this->invoiceService->getAll($filters);
-        return response()->json($invoices, ResponseAlias::HTTP_OK);
-    }
 
-    /**
-     * Retrieve the authenticated user.
-     *
-     * @return User
-     */
-    private function getAuthUser(): User
-    {
-        /** @var User $user */
-        $user = auth()->user();
-        return $user;
-    }
+        // If using the JSON structure, merge filters and sorting into a single array.
+        $params = [];
+        if (isset($data['filters']) && is_array($data['filters'])) {
+            $params = array_merge($params, $data['filters']);
+        }
+        if (isset($data['sort']) && is_array($data['sort'])) {
+            // We'll reserve 'sort' as two keys: sort_by and sort_dir.
+            $params['sort_by'] = $data['sort']['field'] ?? null;
+            $params['sort_dir'] = $data['sort']['direction'] ?? 'asc';
+        }
+        if (isset($data['limit'])) {
+            $params['limit'] = $data['limit'];
+        }
 
-    // GET /api/invoices?invoice_number=...&status=...&limit=...
+        // Let the service handle filtering/sorting.
+        $users = $this->invoiceService->getAll($params);
+        return response()->json($users, ResponseAlias::HTTP_OK);
+    }
 
     public function show($id): JsonResponse
     {
@@ -55,7 +58,7 @@ class InvoiceController extends Controller
         return response()->json($invoice, ResponseAlias::HTTP_OK);
     }
 
-    // GET /api/invoices/{id}
+    // GET /api/invoices?invoice_number=...&status=...&limit=...
 
     /**
      * Ensure that the authenticated user is allowed to manage a resource,
@@ -70,6 +73,20 @@ class InvoiceController extends Controller
         if ($authUser->role !== 'admin' && $authUser->id !== $resourceUserId) {
             abort(ResponseAlias::HTTP_FORBIDDEN, 'Forbidden');
         }
+    }
+
+    // GET /api/invoices/{id}
+
+    /**
+     * Retrieve the authenticated user.
+     *
+     * @return User
+     */
+    private function getAuthUser(): User
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        return $user;
     }
 
     // POST /api/invoices
