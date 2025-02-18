@@ -1,12 +1,9 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -20,34 +17,12 @@ class AuthController extends Controller
 
     /**
      * Handle user signup.
-     *
-     * @param  Request  $request
-     * @return JsonResponse
      */
     public function signup(Request $request): JsonResponse
     {
-        // Validate incoming request data.
-        $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        $validatedData = $this->userService->validateSignup($request->all());
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
-        // Prepare data for user creation.
-        $data = [
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-        ];
-
-        // Create the user using the service layer.
-        $user = $this->userService->create($data);
-
-        // Generate a JWT token for the new user.
+        $user = $this->userService->create($validatedData);
         $token = JWTAuth::fromUser($user);
 
         return response()->json([
@@ -58,9 +33,6 @@ class AuthController extends Controller
 
     /**
      * Handle user login.
-     *
-     * @param  Request  $request
-     * @return JsonResponse
      */
     public function login(Request $request): JsonResponse
     {
@@ -70,18 +42,15 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
-        return response()->json([
-            'token' => $token,
-        ]);
+        return response()->json(['token' => $token]);
     }
 
     /**
      * Return the authenticated user's information.
-     *
-     * @return JsonResponse
      */
     public function me(): JsonResponse
     {
         return response()->json(auth()->user());
     }
 }
+

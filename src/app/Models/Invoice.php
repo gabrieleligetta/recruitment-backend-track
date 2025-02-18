@@ -38,6 +38,10 @@ class Invoice extends Model
         'status',
     ];
 
+    protected $casts = [
+        'invoice_date' => 'date',
+    ];
+
     /**
      * Get the user that owns the invoice.
      */

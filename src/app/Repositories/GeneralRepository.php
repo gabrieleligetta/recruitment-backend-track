@@ -120,7 +120,7 @@ abstract class GeneralRepository implements RepositoryInterface
                             $query->whereNull($field);
                             break;
                         case 'notBlank':
-                            $query->whereNotNull($field);
+                            $query->whereNotNull($field)->where($field, '!=', '');
                             break;
                         default:
                             throw new Exception("Unsupported operator for text: {$operator}");
@@ -158,7 +158,7 @@ abstract class GeneralRepository implements RepositoryInterface
                             $query->whereNull($field);
                             break;
                         case 'notBlank':
-                            $query->whereNotNull($field);
+                            $query->whereNotNull($field)->where($field, '!=', '');
                             break;
                         default:
                             throw new Exception("Unsupported operator for date: {$operator}");
@@ -196,7 +196,7 @@ abstract class GeneralRepository implements RepositoryInterface
                             $query->whereNull($field);
                             break;
                         case 'notBlank':
-                            $query->whereNotNull($field);
+                            $query->whereNotNull($field)->where($field, '!=', '');
                             break;
                         default:
                             throw new Exception("Unsupported operator for number: {$operator}");
@@ -246,7 +246,7 @@ abstract class GeneralRepository implements RepositoryInterface
      * @return mixed|null
      */
     public function findById($id)
-    {
+    : mixed {
         return $this->model::find($id);
     }
 
@@ -257,7 +257,7 @@ abstract class GeneralRepository implements RepositoryInterface
      * @return mixed
      */
     public function create(array $data)
-    {
+    : mixed {
         return $this->model::create($data);
     }
 
@@ -269,7 +269,7 @@ abstract class GeneralRepository implements RepositoryInterface
      * @return mixed|null
      */
     public function update($id, array $data)
-    {
+    : mixed {
         $instance = $this->model::find($id);
         if (!$instance) {
             return null;

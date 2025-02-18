@@ -36,6 +36,17 @@ services:
     networks:
       - app-network
 
+  test_db: # NEW SERVICE FOR TEST DATABASE
+    image: postgres:15
+    environment:
+      POSTGRES_DB: invoices_test
+      POSTGRES_USER: test_admin
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5440:5432"  # Different port for test DB
+    networks:
+      - app-network
+
 volumes:
   db_data:
 

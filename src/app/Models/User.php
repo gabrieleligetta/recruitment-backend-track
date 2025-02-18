@@ -2,14 +2,12 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-
 
 /**
  * App\Models\User
@@ -27,7 +25,7 @@ class User extends Authenticatable implements JWTSubject
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    public mixed $id;
+    // Removed: public mixed $id;
 
     /**
      * The attributes that are mass assignable.
@@ -45,10 +43,10 @@ class User extends Authenticatable implements JWTSubject
      *
      * @var list<string>
      */
-    protected     $hidden = [
+    protected $hidden = [
         'password',
         'remember_token',
-        'role'
+        'role',
     ];
 
     public function getJWTIdentifier()
@@ -57,7 +55,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
+     * Return a key-value array, containing any custom claims to be added to the JWT.
      *
      * @return array
      */
@@ -71,11 +69,7 @@ class User extends Authenticatable implements JWTSubject
         return $this->role === 'admin';
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+
     protected function casts(): array
     {
         return [
