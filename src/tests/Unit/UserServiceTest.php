@@ -8,6 +8,7 @@ use App\Services\UserService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -128,6 +129,32 @@ class UserServiceTest extends TestCase
 
         $this->assertInstanceOf(User::class, $result);
     }
+
+    #[Test]
+    public function it_throws_validation_exception_for_extra_fields(): void
+    {
+        // 1) Prepare valid data
+        $validData = [
+            'name'     => 'Jane Doe',
+            'email'    => 'jane@example.com',
+            'password' => 'securepassword', // In your actual code, the create method also expects a 6+ char password
+        ];
+
+        // 2) Add an extra field 'foo' that isn't in the validation rules
+        $invalidData = $validData + ['foo' => 'bar'];
+
+        // 3) We expect a ValidationException from the service's validation
+        $this->expectException(ValidationException::class);
+        // The default top-level message is "The given data was invalid."
+        $this->expectExceptionMessage('The given data was invalid.');
+
+        // 4) Because validation fails, the repository create() method should NOT be called
+        $this->mockUserRepository->shouldNotReceive('create');
+
+        // 5) This call should trigger the validation exception
+        $this->userService->create($invalidData);
+    }
+
 
     /*
     |--------------------------------------------------------------------------

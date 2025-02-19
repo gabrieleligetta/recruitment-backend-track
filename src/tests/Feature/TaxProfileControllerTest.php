@@ -13,6 +13,13 @@ class TaxProfileControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | TEST: List Tax Profiles (POST /api/tax-profile/list)
+    |--------------------------------------------------------------------------
+    */
+
     #[Test]
     public function it_can_paginate_and_sort_tax_profiles_by_company_name(): void
     {
@@ -155,12 +162,9 @@ class TaxProfileControllerTest extends TestCase
         $this->assertEquals(3, count($user2Response->json('data')));
     }
 
-
-
-
     /*
     |--------------------------------------------------------------------------
-    | TEST: List Tax Profiles (POST /api/tax-profile/list)
+    | TEST: Show Tax Profile (GET /api/tax-profile/{id})
     |--------------------------------------------------------------------------
     */
 
@@ -180,12 +184,6 @@ class TaxProfileControllerTest extends TestCase
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | TEST: Show Tax Profile (GET /api/tax-profile/{id})
-    |--------------------------------------------------------------------------
-    */
-
     #[Test]
     public function it_denies_access_to_non_owner_users(): void
     {
@@ -199,6 +197,12 @@ class TaxProfileControllerTest extends TestCase
         $response->assertStatus(403); //Expect forbidden
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | TEST: Create Tax Profile (POST /api/tax-profile)
+    |--------------------------------------------------------------------------
+    */
 
     #[Test]
     public function it_allows_users_to_create_their_own_tax_profile(): void
@@ -218,12 +222,6 @@ class TaxProfileControllerTest extends TestCase
         $response->assertStatus(201);
         $this->assertDatabaseHas('tax_profiles', ['company_name' => 'New Company']);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | TEST: Create Tax Profile (POST /api/tax-profile)
-    |--------------------------------------------------------------------------
-    */
 
     #[Test]
     public function it_allows_admins_to_create_a_tax_profile_for_any_user(): void
@@ -245,6 +243,12 @@ class TaxProfileControllerTest extends TestCase
         $response->assertStatus(201);
         $this->assertDatabaseHas('tax_profiles', ['company_name' => 'Admin Created Co']);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | TEST: Update Tax Profile (PUT /api/tax-profile/{id})
+    |--------------------------------------------------------------------------
+    */
 
     #[Test]
     public function it_allows_admin_or_owner_to_update_tax_profile(): void
@@ -272,12 +276,6 @@ class TaxProfileControllerTest extends TestCase
         $responseUser->assertStatus(200);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | TEST: Update Tax Profile (PUT /api/tax-profile/{id})
-    |--------------------------------------------------------------------------
-    */
-
     #[Test]
     public function it_prevents_non_owner_users_from_updating_profiles(): void
     {
@@ -290,6 +288,12 @@ class TaxProfileControllerTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | TEST: Delete Tax Profile (DELETE /api/tax-profile/{id})
+    |--------------------------------------------------------------------------
+    */
 
     #[Test]
     public function it_allows_admin_or_owner_to_delete_a_tax_profile(): void
@@ -310,12 +314,6 @@ class TaxProfileControllerTest extends TestCase
         $responseUser->assertStatus(200);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | TEST: Delete Tax Profile (DELETE /api/tax-profile/{id})
-    |--------------------------------------------------------------------------
-    */
-
     #[Test]
     public function it_prevents_non_owner_users_from_deleting_profiles(): void
     {
@@ -327,11 +325,5 @@ class TaxProfileControllerTest extends TestCase
             ->deleteJson("/api/tax-profile/{$profile->id}");
 
         $response->assertStatus(403);
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        Artisan::call('migrate:fresh');
     }
 }

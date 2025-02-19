@@ -7,6 +7,7 @@ use App\Repositories\UserRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -139,7 +140,7 @@ class UserRepositoryTest extends TestCase
     public function it_can_filter_users_by_numeric_id_range(): void
     {
         // Create three users (the ID field will auto-increment, but let's not assume it starts at 1)
-        $firstUser = User::factory()->create();
+        User::factory()->create();
         $secondUser = User::factory()->create();
         $thirdUser  = User::factory()->create();
 
@@ -186,6 +187,51 @@ class UserRepositoryTest extends TestCase
         $this->assertEquals('testuser@example.com', $newUser->email);
         $this->assertTrue(Hash::check('secret', $newUser->password));
     }
+
+    #[Test]
+    public function it_throws_exception_when_sorting_by_invalid_column(): void
+    {
+        // Create a user so that we have at least one record
+        User::factory()->create(['name' => 'Test User']);
+
+        // We expect an InvalidArgumentException to be thrown
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid sort field: invalid_column');
+
+        $params = [
+            'sort_by'  => 'invalid_column', // not a real DB column
+            'sort_dir' => 'asc',
+        ];
+
+        // This call should trigger the exception
+        $this->userRepository->all($params);
+    }
+
+    #[Test]
+    public function it_throws_exception_when_filtering_by_invalid_column(): void
+    {
+        // Again, create a user
+        User::factory()->create(['name' => 'Test User']);
+
+        // We expect an InvalidArgumentException to be thrown
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid filter field: invalid_field');
+
+        $params = [
+            'filters' => [
+                [
+                    'field'     => 'invalid_field', // not a real DB column
+                    'operator'  => 'equals',
+                    'value'     => 'some value',
+                    'fieldType' => 'text',
+                ],
+            ],
+        ];
+
+        // This call should trigger the exception
+        $this->userRepository->all($params);
+    }
+
 
     /*
     |--------------------------------------------------------------------------

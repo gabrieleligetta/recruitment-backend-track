@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -18,7 +19,6 @@ class AuthenticationFlowTest extends TestCase
             'name'     => 'John Doe',
             'email'    => 'john.doe@example.com',
             'password' => 'securepassword123',
-            "password_confirmation" => "securepassword123"
         ]);
 
         // Ensure signup is successful (201 Created)
@@ -33,7 +33,7 @@ class AuthenticationFlowTest extends TestCase
         ]);
 
         // Extract token from the signup response
-        $token = $signupResponse->json('token');
+        $signupResponse->json('token');
 
         // Ensure user exists in the database
         $this->assertDatabaseHas('users', [

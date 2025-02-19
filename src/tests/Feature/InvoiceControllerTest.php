@@ -17,6 +17,14 @@ class InvoiceControllerTest extends TestCase
     #[Test]
     public function it_can_paginate_and_sort_invoices_by_invoice_number(): void
     {
+
+        /*
+        |--------------------------------------------------------------------------
+        | TEST: List Invoices (POST /api/invoice/list)
+        |--------------------------------------------------------------------------
+        */
+
+
         // 1) Create an admin (who can see all invoices).
         $admin = User::factory()->create([
             'role' => 'admin',
@@ -166,10 +174,9 @@ class InvoiceControllerTest extends TestCase
         $this->assertEquals(3, count($user2Response->json('data')));
     }
 
-
     /*
     |--------------------------------------------------------------------------
-    | TEST: List Invoices (POST /api/invoice/list)
+    | TEST: Show Invoice (GET /api/invoice/{id})
     |--------------------------------------------------------------------------
     */
 
@@ -190,12 +197,6 @@ class InvoiceControllerTest extends TestCase
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | TEST: Show Invoice (GET /api/invoice/{id})
-    |--------------------------------------------------------------------------
-    */
-
     #[Test]
     public function it_denies_access_to_non_owner_users_for_invoices(): void
     {
@@ -209,6 +210,12 @@ class InvoiceControllerTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | TEST: Create Invoice (POST /api/invoice)
+    |--------------------------------------------------------------------------
+    */
 
     #[Test]
     public function it_allows_users_to_create_an_invoice(): void
@@ -230,12 +237,6 @@ class InvoiceControllerTest extends TestCase
         $response->assertStatus(201);
         $this->assertDatabaseHas('invoices', ['invoice_number' => 'INV-1000']);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | TEST: Create Invoice (POST /api/invoice)
-    |--------------------------------------------------------------------------
-    */
 
     #[Test]
     public function it_allows_admins_to_create_an_invoice_for_any_user(): void
@@ -259,6 +260,12 @@ class InvoiceControllerTest extends TestCase
         $this->assertDatabaseHas('invoices', ['invoice_number' => 'INV-2000']);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | TEST: Update Invoice (PUT /api/invoice/{id})
+    |--------------------------------------------------------------------------
+    */
+
     #[Test]
     public function it_allows_admin_or_owner_to_update_invoice(): void
     {
@@ -274,7 +281,7 @@ class InvoiceControllerTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | TEST: Update Invoice (PUT /api/invoice/{id})
+    | TEST: Delete Invoice (DELETE /api/invoice/{id})
     |--------------------------------------------------------------------------
     */
 
@@ -291,12 +298,6 @@ class InvoiceControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | TEST: Delete Invoice (DELETE /api/invoice/{id})
-    |--------------------------------------------------------------------------
-    */
-
     #[Test]
     public function it_prevents_non_owner_users_from_deleting_invoices(): void
     {
@@ -309,11 +310,5 @@ class InvoiceControllerTest extends TestCase
             ->deleteJson("/api/invoice/{$invoice->id}");
 
         $response->assertStatus(403);
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        Artisan::call('migrate:fresh');
     }
 }

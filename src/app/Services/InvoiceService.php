@@ -58,12 +58,7 @@ class InvoiceService extends GeneralService
             'status'         => $isUpdate ? 'sometimes|required|in:pending,paid,canceled' : 'required|in:pending,paid,canceled',
         ];
 
-        $validator = Validator::make($data, $rules);
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        return $validator->validated();
+        return $this->generalValidation($data, $rules);
     }
 
 

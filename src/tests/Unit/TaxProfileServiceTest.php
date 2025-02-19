@@ -10,6 +10,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -80,6 +81,38 @@ class TaxProfileServiceTest extends TestCase
 
         $this->assertNull($result);
     }
+
+    #[Test]
+    public function it_throws_validation_exception_for_extra_fields(): void
+    {
+        // 1) Create an admin user (so user_id won't be overwritten).
+        $adminUser = User::factory()->create(['role' => 'admin']);
+
+        // 2) Build valid data, but include an extra 'foo' field that isn't in the validation rules.
+        $invalidData = [
+            'user_id'      => $adminUser->id,
+            'tax_id'       => 'TAX-9999',
+            'company_name' => 'Invalid Corp',
+            'address'      => '123 Fake St',
+            'country'      => 'Neverland',
+            'city'         => 'Fakesville',
+            'zip_code'     => '12345',
+            'foo'          => 'bar', // Extra field not allowed
+        ];
+
+        // 3) We expect a ValidationException when we call ->create()
+        $this->expectException(ValidationException::class);
+
+        // Optionally check the exception message, if you include one about extra fields
+        $this->expectExceptionMessage('The given data was invalid.');
+
+        // 4) The repository's create() method should NOT be called because validation fails first.
+        $this->mockTaxProfileRepository->shouldNotReceive('create');
+
+        // 5) Attempting to create with the extra field triggers the validation exception.
+        $this->taxProfileService->create($adminUser, $invalidData);
+    }
+
 
     #[Test]
     public function it_creates_a_new_tax_profile(): void

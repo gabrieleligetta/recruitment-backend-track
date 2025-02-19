@@ -6,9 +6,6 @@ use App\Models\TaxProfile;
 use App\Models\User;
 use App\Repositories\TaxProfileRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Validator;
-use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Illuminate\Auth\Access\AuthorizationException;
 
 class TaxProfileService extends GeneralService
@@ -50,7 +47,7 @@ class TaxProfileService extends GeneralService
     private function validateProfile(array $data, bool $isUpdate = false, ?int $id = null): array
     {
         $rules = [
-            'user_id'      => $isUpdate ? 'sometimes|required|exists:users,id' : 'required|exists:users,id',
+            'user_id'      => $isUpdate ? "sometimes|required|exists:users,id" : "required|exists:users,id",
             'tax_id'       => $isUpdate ? "sometimes|required|string|unique:tax_profiles,tax_id,{$id}" : 'required|string|unique:tax_profiles,tax_id',
             'company_name' => $isUpdate ? 'sometimes|required|string|max:255' : 'required|string|max:255',
             'address'      => $isUpdate ? 'sometimes|required|string' : 'required|string',
@@ -59,12 +56,8 @@ class TaxProfileService extends GeneralService
             'zip_code'     => $isUpdate ? 'sometimes|required|string|max:20' : 'required|string|max:20',
         ];
 
-        $validator = Validator::make($data, $rules);
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
+        return $this->generalValidation($data, $rules);
 
-        return $validator->validated();
     }
 
 

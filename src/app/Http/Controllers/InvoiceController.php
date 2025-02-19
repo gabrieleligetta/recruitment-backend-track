@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Services\InvoiceService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -10,7 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Throwable;
+use OpenApi\Attributes as OA;
 
+#[OA\Tag(name: "Invoice", description: "Operations related to invoices")]
 class InvoiceController extends Controller
 {
     protected InvoiceService $invoiceService;
@@ -21,7 +22,28 @@ class InvoiceController extends Controller
         $this->invoiceService = $invoiceService;
     }
 
-    // POST /api/invoice/list
+    #[OA\Post(
+        path: "/api/invoice/list",
+        description: "Returns a list of invoices based on filtering, sorting, and pagination options. Requires authentication.",
+        summary: "List Invoices",
+        security: [["bearerAuth" => []] ],
+        requestBody: new OA\RequestBody(
+            description: "Filtering, sorting, and pagination parameters",
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/PaginatedListFilter")
+        ),
+        tags: ["Invoice"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "List of invoices",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/Invoice")
+                )
+            )
+        ]
+    )]
     public function list(Request $request): JsonResponse
     {
         $authUser = $this->getAuthenticatedUser();
@@ -32,7 +54,48 @@ class InvoiceController extends Controller
         return response()->json($invoices, ResponseAlias::HTTP_OK);
     }
 
-    // GET /api/invoice/{id}
+    #[OA\Get(
+        path: "/api/invoice/{id}",
+        description: "Retrieve an invoice by its ID. Requires authentication.",
+        summary: "Get Invoice",
+        security: [["bearerAuth" => []] ],
+        tags: ["Invoice"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "Invoice ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Invoice found",
+                content: new OA\JsonContent(ref: "#/components/schemas/Invoice")
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Forbidden")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: "Server error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Server Error"),
+                        new OA\Property(property: "error", type: "string", example: "Error details...")
+                    ]
+                )
+            )
+        ]
+    )]
     public function show(int $id): JsonResponse
     {
         try {
@@ -46,7 +109,43 @@ class InvoiceController extends Controller
         }
     }
 
-    // POST /api/invoice
+    #[OA\Post(
+        path: "/api/invoice",
+        description: "Creates a new invoice. Requires authentication.",
+        summary: "Create Invoice",
+        security: [["bearerAuth" => []] ],
+        requestBody: new OA\RequestBody(
+            description: "Invoice data",
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/Invoice")
+        ),
+        tags: ["Invoice"],
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Invoice created successfully",
+                content: new OA\JsonContent(ref: "#/components/schemas/Invoice")
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Forbidden")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation errors",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "object", example: "{ 'field': ['Error message'] }")
+                    ]
+                )
+            )
+        ]
+    )]
     public function store(Request $request): JsonResponse
     {
         try {
@@ -60,7 +159,52 @@ class InvoiceController extends Controller
         }
     }
 
-    // PUT /api/invoice/{id}
+    #[OA\Put(
+        path: "/api/invoice/{id}",
+        description: "Updates an existing invoice. Requires authentication.",
+        summary: "Update Invoice",
+        security: [["bearerAuth" => []] ],
+        requestBody: new OA\RequestBody(
+            description: "Updated invoice data",
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/Invoice")
+        ),
+        tags: ["Invoice"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "Invoice ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Invoice updated successfully",
+                content: new OA\JsonContent(ref: "#/components/schemas/Invoice")
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Forbidden")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation errors",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "object", example: "{ 'field': ['Error message'] }")
+                    ]
+                )
+            )
+        ]
+    )]
     public function update(Request $request, int $id): JsonResponse
     {
         try {
@@ -74,7 +218,51 @@ class InvoiceController extends Controller
         }
     }
 
-    // DELETE /api/invoice/{id}
+    #[OA\Delete(
+        path: "/api/invoice/{id}",
+        description: "Deletes an invoice by its ID. Requires authentication.",
+        summary: "Delete Invoice",
+        security: [["bearerAuth" => []] ],
+        tags: ["Invoice"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                description: "Invoice ID",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Invoice deleted successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Invoice deleted")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Invoice not found",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Invoice not found")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Forbidden")
+                    ]
+                )
+            )
+        ]
+    )]
     public function destroy(int $id): JsonResponse
     {
         try {
@@ -87,3 +275,4 @@ class InvoiceController extends Controller
         }
     }
 }
+

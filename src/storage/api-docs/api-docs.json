@@ -1,0 +1,1488 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "My Laravel API",
+        "description": "This is the API documentation for my Invoices application.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost/api",
+            "description": "Local API Server"
+        }
+    ],
+    "paths": {
+        "/api/auth": {},
+        "/api/auth/signup": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "User Signup",
+                "description": "Register a new user",
+                "operationId": "6cf11ae1f0353336f0782d896b80cb94",
+                "requestBody": {
+                    "description": "User data for signup",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "JWT_TOKEN"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "User Login",
+                "description": "Authenticate a user and return a JWT token",
+                "operationId": "8dcb70df1020986038d098cc08d05dae",
+                "requestBody": {
+                    "description": "Credentials for login",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful, returns JWT token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "token": {
+                                            "type": "string",
+                                            "example": "JWT_TOKEN"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid credentials"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get Authenticated User",
+                "description": "Return the authenticated user's information",
+                "operationId": "b9abb1a7a74670a19c215c2c133f14d8",
+                "responses": {
+                    "200": {
+                        "description": "Authenticated user information",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/invoice/list": {
+            "post": {
+                "tags": [
+                    "Invoice"
+                ],
+                "summary": "List Invoices",
+                "description": "Returns a list of invoices based on filtering, sorting, and pagination options. Requires authentication.",
+                "operationId": "1589492b3a0664f87658f0fde201b580",
+                "requestBody": {
+                    "description": "Filtering, sorting, and pagination parameters",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaginatedListFilter"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "List of invoices",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Invoice"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/invoice/{id}": {
+            "get": {
+                "tags": [
+                    "Invoice"
+                ],
+                "summary": "Get Invoice",
+                "description": "Retrieve an invoice by its ID. Requires authentication.",
+                "operationId": "ea794c8902eebd45c41a2be4e2a9daad",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoice found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Invoice"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Server Error"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Error details..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Invoice"
+                ],
+                "summary": "Update Invoice",
+                "description": "Updates an existing invoice. Requires authentication.",
+                "operationId": "71da025873fb8b7132e9d80079585b91",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated invoice data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Invoice"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Invoice updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Invoice"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "object",
+                                            "example": "{ 'field': ['Error message'] }"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Invoice"
+                ],
+                "summary": "Delete Invoice",
+                "description": "Deletes an invoice by its ID. Requires authentication.",
+                "operationId": "7a5671d649c49132a2a7fd413c261ed2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoice deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invoice deleted"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Invoice not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invoice not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/invoice": {
+            "post": {
+                "tags": [
+                    "Invoice"
+                ],
+                "summary": "Create Invoice",
+                "description": "Creates a new invoice. Requires authentication.",
+                "operationId": "ce42c64432fe3c0715e3b4572154dd67",
+                "requestBody": {
+                    "description": "Invoice data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Invoice"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Invoice created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Invoice"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "object",
+                                            "example": "{ 'field': ['Error message'] }"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/tax-profile/list": {
+            "post": {
+                "tags": [
+                    "TaxProfile"
+                ],
+                "summary": "List Tax Profiles",
+                "description": "Returns a list of tax profiles based on provided filters, sort, and limit parameters. Requires authentication.",
+                "operationId": "4c02c5b06942f82e53369593b3edffc6",
+                "requestBody": {
+                    "description": "Filtering, sorting, and pagination parameters",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaginatedListFilter"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "List of tax profiles",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TaxProfile"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/tax-profile/{id}": {
+            "get": {
+                "tags": [
+                    "TaxProfile"
+                ],
+                "summary": "Get Tax Profile",
+                "description": "Retrieve a specific tax profile by its ID. Requires authentication.",
+                "operationId": "f2cc5760291316bd02ec96d3532bdc7d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the tax profile",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tax profile found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxProfile"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Tax Profile not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tax Profile not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "TaxProfile"
+                ],
+                "summary": "Update Tax Profile",
+                "description": "Updates an existing tax profile. Requires authentication.",
+                "operationId": "383353ac1539a7d3f01588629da0f8d8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the tax profile to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Tax profile data to update",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Tax profile updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxProfile"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Tax Profile not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tax Profile not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "TaxProfile"
+                ],
+                "summary": "Delete Tax Profile",
+                "description": "Deletes a tax profile by its ID. Requires authentication.",
+                "operationId": "be5bcf1c389fd5802e0983dfd71751ff",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the tax profile to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tax profile deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tax Profile deleted"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Tax Profile not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tax Profile not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/tax-profile": {
+            "post": {
+                "tags": [
+                    "TaxProfile"
+                ],
+                "summary": "Create Tax Profile",
+                "description": "Creates a new tax profile for the authenticated user.",
+                "operationId": "38b2f7da05a2bdba034f828877eed960",
+                "requestBody": {
+                    "description": "Tax profile details",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "tax_id",
+                                    "company_name",
+                                    "address",
+                                    "country",
+                                    "city",
+                                    "zip_code"
+                                ],
+                                "properties": {
+                                    "tax_id": {
+                                        "type": "string",
+                                        "example": "TAX123456"
+                                    },
+                                    "company_name": {
+                                        "type": "string",
+                                        "example": "Acme Inc."
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "123 Main Street"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "example": "USA"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "example": "New York"
+                                    },
+                                    "zip_code": {
+                                        "type": "string",
+                                        "example": "10001"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tax profile created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxProfile"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "object",
+                                            "example": "{ 'tax_id': ['The tax_id field is required.'] }"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/user/list": {
+            "post": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "List Users",
+                "description": "Returns a list of users based on filter parameters. Requires authentication.",
+                "operationId": "30445baac79ff5f15e8e33563aad2af9",
+                "requestBody": {
+                    "description": "Filtering, sorting, and pagination parameters",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaginatedListFilter"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/user/{id}": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User",
+                "description": "Returns a single user by ID. Requires authentication.",
+                "operationId": "d8f696420bea235f4916124c9ba1c507",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the user",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "User not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update User",
+                "description": "Updates an existing user. Requires authentication and proper authorization.",
+                "operationId": "5e09c26a0abb2b1bf040badb2d9c69ba",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the user to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "User data for update",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "User not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete User",
+                "description": "Deletes a user by ID. Requires admin privileges.",
+                "operationId": "f8d7aea516ee464d0afee90f3a1a1722",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the user to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User deleted"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "User not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/user": {
+            "post": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create User",
+                "description": "Creates a new user. Requires admin privileges.",
+                "operationId": "089999749fbdec98922de2f74ba8d540",
+                "requestBody": {
+                    "description": "User data to create a new user",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Filter": {
+                "title": "Filter",
+                "description": "A single filter condition.",
+                "required": [
+                    "field",
+                    "operator"
+                ],
+                "properties": {
+                    "field": {
+                        "description": "Field name to filter on.",
+                        "type": "string",
+                        "example": "user_id"
+                    },
+                    "value": {
+                        "description": "Value to filter by.",
+                        "type": "string",
+                        "example": "36"
+                    },
+                    "fieldType": {
+                        "description": "Type of the field.",
+                        "type": "string",
+                        "enum": [
+                            "text",
+                            "date",
+                            "number",
+                            "boolean",
+                            "set",
+                            "array"
+                        ],
+                        "example": "number"
+                    },
+                    "operator": {
+                        "description": "Operator for the filter condition.",
+                        "type": "string",
+                        "enum": [
+                            "contains",
+                            "notContains",
+                            "equals",
+                            "notEqual",
+                            "startsWith",
+                            "endsWith",
+                            "blank",
+                            "notBlank",
+                            "greaterThan",
+                            "greaterThanOrEqual",
+                            "lessThan",
+                            "lessThanOrEqual",
+                            "inRange"
+                        ],
+                        "example": "equals"
+                    },
+                    "rangeValue": {
+                        "description": "Secondary value for range filters (if applicable).",
+                        "type": "string",
+                        "example": "50",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PaginatedListFilter": {
+                "title": "Paginated List Filter",
+                "description": "Parameters for filtering, sorting, and pagination.",
+                "required": [
+                    "filters",
+                    "sort",
+                    "limit"
+                ],
+                "properties": {
+                    "filters": {
+                        "description": "Array of filter objects",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Filter"
+                        }
+                    },
+                    "sort": {
+                        "$ref": "#/components/schemas/Sort"
+                    },
+                    "limit": {
+                        "description": "Maximum number of records to return",
+                        "type": "integer",
+                        "example": 15
+                    }
+                },
+                "type": "object"
+            },
+            "Sort": {
+                "title": "Sort",
+                "description": "Sorting options for a query.",
+                "required": [
+                    "field",
+                    "direction"
+                ],
+                "properties": {
+                    "field": {
+                        "description": "Field to sort by.",
+                        "type": "string",
+                        "example": "invoice_number"
+                    },
+                    "direction": {
+                        "description": "Sort direction.",
+                        "type": "string",
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "example": "asc"
+                    }
+                },
+                "type": "object"
+            },
+            "Invoice": {
+                "title": "Invoice",
+                "description": "Invoice model representing an invoice issued to a user",
+                "required": [
+                    "user_id",
+                    "tax_profile_id",
+                    "invoice_number",
+                    "invoice_date",
+                    "total_amount",
+                    "status"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier for the invoice",
+                        "type": "integer",
+                        "readOnly": true,
+                        "example": 1
+                    },
+                    "user_id": {
+                        "description": "ID of the user who owns the invoice",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "tax_profile_id": {
+                        "description": "ID of the tax profile associated with the invoice",
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "invoice_number": {
+                        "description": "Invoice number",
+                        "type": "string",
+                        "example": "INV-1001"
+                    },
+                    "description": {
+                        "description": "Description of the invoice",
+                        "type": "string",
+                        "example": "Invoice for consulting services rendered"
+                    },
+                    "invoice_date": {
+                        "description": "Date of the invoice",
+                        "type": "string",
+                        "format": "date",
+                        "example": "2021-12-31"
+                    },
+                    "total_amount": {
+                        "description": "Total amount for the invoice",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1234.56
+                    },
+                    "status": {
+                        "description": "Current status of the invoice",
+                        "type": "string",
+                        "example": "pending"
+                    },
+                    "created_at": {
+                        "description": "Timestamp when the invoice was created",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2022-01-01T12:00:00Z",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "description": "Timestamp when the invoice was last updated",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2022-01-02T12:00:00Z",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "TaxProfile": {
+                "title": "Tax Profile",
+                "description": "Tax profile associated with a user, containing tax-related information.",
+                "required": [
+                    "user_id",
+                    "tax_id",
+                    "company_name",
+                    "address",
+                    "country",
+                    "city",
+                    "zip_code"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier for the tax profile",
+                        "type": "integer",
+                        "readOnly": true,
+                        "example": 1
+                    },
+                    "user_id": {
+                        "description": "ID of the user that owns the tax profile",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "tax_id": {
+                        "description": "Tax identification number",
+                        "type": "string",
+                        "example": "TAX123456"
+                    },
+                    "company_name": {
+                        "description": "Name of the company",
+                        "type": "string",
+                        "example": "Acme Inc."
+                    },
+                    "address": {
+                        "description": "Company address",
+                        "type": "string",
+                        "example": "123 Main Street"
+                    },
+                    "country": {
+                        "description": "Country where the company is located",
+                        "type": "string",
+                        "example": "USA"
+                    },
+                    "city": {
+                        "description": "City where the company is located",
+                        "type": "string",
+                        "example": "New York"
+                    },
+                    "zip_code": {
+                        "description": "Zip code for the company's location",
+                        "type": "string",
+                        "example": "10001"
+                    },
+                    "created_at": {
+                        "description": "Timestamp when the tax profile was created",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2022-01-01T12:00:00Z",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "description": "Timestamp when the tax profile was last updated",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2022-01-02T12:00:00Z",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "title": "User Model",
+                "description": "User entity for authentication and user management",
+                "required": [
+                    "name",
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier for the user",
+                        "type": "integer",
+                        "readOnly": true,
+                        "example": 1
+                    },
+                    "name": {
+                        "description": "Name of the user",
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "description": "Email address of the user",
+                        "type": "string",
+                        "format": "email",
+                        "example": "john@example.com"
+                    },
+                    "role": {
+                        "description": "Role assigned to the user",
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "admin"
+                        ],
+                        "example": "user"
+                    },
+                    "password": {
+                        "description": "User's password (write-only)",
+                        "type": "string",
+                        "writeOnly": true
+                    },
+                    "email_verified_at": {
+                        "description": "Timestamp when the user's email was verified",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-01-15T13:45:30Z",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Timestamp when the user was created",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-01-15T12:00:00Z"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp when the user was last updated",
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "example": "2023-02-01T08:00:00Z"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Authentication endpoints"
+        },
+        {
+            "name": "Invoice",
+            "description": "Operations related to invoices"
+        },
+        {
+            "name": "TaxProfile",
+            "description": "Operations for managing tax profiles"
+        },
+        {
+            "name": "User",
+            "description": "Operations about users"
+        }
+    ]
+}

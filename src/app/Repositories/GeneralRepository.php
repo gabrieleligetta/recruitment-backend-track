@@ -7,6 +7,8 @@ use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Validator;
+use InvalidArgumentException;
 
 abstract class GeneralRepository implements RepositoryInterface
 {
@@ -38,63 +40,83 @@ abstract class GeneralRepository implements RepositoryInterface
      *
      * @param array $params
      * @return LengthAwarePaginator
+     * @throws InvalidArgumentException
      */
     public function all(array $params = []): LengthAwarePaginator
     {
-        $query = $this->model::query();
+        // 1) Start with a fresh query
+        $query = $this->model->newQuery();
 
-        // Extract pagination limit.
+        // 2) Determine how many items per page (default = 10)
         $limit = $params['limit'] ?? 10;
         unset($params['limit']);
 
-        // Sorting: check for sort_by and sort_dir.
+        // 3) Dynamically fetch the allowed columns from the table schema
+        $columns = $this->model->getConnection()
+            ->getSchemaBuilder()
+            ->getColumnListing($this->model->getTable());
+
+        // 4) Apply sorting if requested
         if (isset($params['sort_by'])) {
+            // Check if the column is valid
+            if (!in_array($params['sort_by'], $columns)) {
+                throw new InvalidArgumentException("Invalid sort field: {$params['sort_by']}");
+            }
+
             $direction = $params['sort_dir'] ?? 'asc';
             $query->orderBy($params['sort_by'], $direction);
+
             unset($params['sort_by'], $params['sort_dir']);
         }
 
-        // If using a structured filter input (like an array of filter objects),
-        // you can check if a "filters" key exists:
+        // 5) Apply filters (either under the "filters" key or direct $params)
         if (isset($params['filters']) && is_array($params['filters'])) {
-            $query = $this->applyFilters($query, $params['filters']);
+            $query = $this->applyFilters($query, $params['filters'], $columns);
         } else {
-            // Otherwise, assume $params itself is a flat set of filters.
-            $query = $this->applyFilters($query, $params);
+            $query = $this->applyFilters($query, $params, $columns);
         }
 
+        // 6) Paginate and return
         return $query->paginate($limit);
     }
-
-
 
     /**
      * Apply a set of dynamic filters to the query.
      *
      * Each filter should be an associative array with keys:
-     * - field: the column name
-     * - value: the value to compare
-     * - fieldType: one of 'text', 'date', 'number', 'boolean', 'set', 'array'
-     * - operator: the operator, e.g. 'equals', 'notEqual', 'contains', 'greaterThan', 'inRange', etc.
-     * - rangeValue: (optional) used for inRange operator
+     *   'field' => (string) the column name
+     *   'value' => (mixed)  the value to compare
+     *   'fieldType' => 'text','date','number','boolean','set','array'
+     *   'operator' => 'equals','contains','greaterThan','inRange', etc.
+     *   'rangeValue' => used for 'inRange' operator
      *
      * @param  Builder  $query
-     * @param array $filters
+     * @param  array    $filters
+     * @param  array    $columns  The valid table columns
      * @return Builder
+     * @throws Exception
      */
-    protected function applyFilters(Builder $query, array $filters)
-    : Builder {
+    protected function applyFilters(Builder $query, array $filters, array $columns): Builder
+    {
         foreach ($filters as $filter) {
-            // Ensure required keys exist.
+            // Ensure 'field' and 'operator' exist
             if (!isset($filter['field'], $filter['operator'])) {
-                continue;
+                continue; // or throw an exception if you prefer
             }
+
             $field = $filter['field'];
             $value = $filter['value'] ?? null;
             $fieldType = $filter['fieldType'] ?? 'text';
             $operator = $filter['operator'];
             $rangeValue = $filter['rangeValue'] ?? null;
 
+            // 1) Skip or reject invalid fields
+            if (!in_array($field, $columns)) {
+                // either ignore or throw an exception
+                throw new InvalidArgumentException("Invalid filter field: {$field}");
+            }
+
+            // 2) Apply filtering logic
             switch ($fieldType) {
                 case 'text':
                     switch ($operator) {
@@ -149,7 +171,7 @@ abstract class GeneralRepository implements RepositoryInterface
                             break;
                         case 'inRange':
                             if (!$rangeValue) {
-                                throw new Exception("Range value must be provided for inRange operator on date field.");
+                                throw new Exception("Range value must be provided for 'inRange' operator on date field.");
                             }
                             $query->whereDate($field, '>=', $value)
                                 ->whereDate($field, '<=', $rangeValue);
@@ -187,7 +209,7 @@ abstract class GeneralRepository implements RepositoryInterface
                             break;
                         case 'inRange':
                             if (!$rangeValue) {
-                                throw new Exception("Range value must be provided for inRange operator on number field.");
+                                throw new Exception("Range value must be provided for 'inRange' operator on number field.");
                             }
                             $query->where($field, '>=', $value)
                                 ->where($field, '<=', $rangeValue);
@@ -215,11 +237,11 @@ abstract class GeneralRepository implements RepositoryInterface
                     break;
 
                 case 'set':
-                    // For sets we can assume equals or contains.
+                    // For sets, we might have 'equals' or 'contains' meaning an IN clause
                     if ($operator === 'equals') {
                         $query->where($field, '=', $value);
                     } elseif ($operator === 'contains') {
-                        // Assuming value is a comma-separated list.
+                        // expecting an array or comma-delimited string
                         $values = is_array($value) ? $value : explode(',', $value);
                         $query->whereIn($field, $values);
                     } else {
@@ -228,7 +250,8 @@ abstract class GeneralRepository implements RepositoryInterface
                     break;
 
                 case 'array':
-                    // For arrays, we can use a JSON search.
+                    // Searching for a value inside a JSON column or similar
+                    // This is very application-specific. For demonstration:
                     $query->where($field, 'like', '%' . $value . '%');
                     break;
 
@@ -236,6 +259,7 @@ abstract class GeneralRepository implements RepositoryInterface
                     throw new Exception("Unsupported field type: {$fieldType}");
             }
         }
+
         return $query;
     }
 
@@ -245,9 +269,9 @@ abstract class GeneralRepository implements RepositoryInterface
      * @param mixed $id
      * @return mixed|null
      */
-    public function findById($id)
-    : mixed {
-        return $this->model::find($id);
+    public function findById($id): mixed
+    {
+        return $this->model->find($id);
     }
 
     /**
@@ -256,9 +280,9 @@ abstract class GeneralRepository implements RepositoryInterface
      * @param array $data
      * @return mixed
      */
-    public function create(array $data)
-    : mixed {
-        return $this->model::create($data);
+    public function create(array $data): mixed
+    {
+        return $this->model->create($data);
     }
 
     /**
@@ -268,12 +292,13 @@ abstract class GeneralRepository implements RepositoryInterface
      * @param array $data
      * @return mixed|null
      */
-    public function update($id, array $data)
-    : mixed {
-        $instance = $this->model::find($id);
+    public function update($id, array $data): mixed
+    {
+        $instance = $this->model->find($id);
         if (!$instance) {
             return null;
         }
+
         $instance->update($data);
         return $instance;
     }
@@ -286,10 +311,11 @@ abstract class GeneralRepository implements RepositoryInterface
      */
     public function delete($id): bool
     {
-        $instance = $this->model::find($id);
+        $instance = $this->model->find($id);
         if (!$instance) {
             return false;
         }
-        return $instance->delete();
+
+        return (bool) $instance->delete();
     }
 }

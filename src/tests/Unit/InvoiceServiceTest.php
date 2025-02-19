@@ -10,6 +10,7 @@ use App\Services\InvoiceService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Validation\ValidationException;
 use Mockery;
 use Illuminate\Auth\Access\AuthorizationException;
 use PHPUnit\Framework\Attributes\Test;
@@ -104,6 +105,7 @@ class InvoiceServiceTest extends TestCase
     }
 
 
+
     #[Test]
     public function it_updates_an_existing_invoice(): void
     {
@@ -136,6 +138,37 @@ class InvoiceServiceTest extends TestCase
 
         $this->assertInstanceOf(Invoice::class, $result);
         $this->assertEquals('INV-5678', $result->invoice_number);
+    }
+
+    #[Test]
+    public function it_throws_validation_exception_for_extra_fields(): void
+    {
+        // 1) Create an admin user so we don't overwrite user_id
+        $adminUser = User::factory()->create(['role' => 'admin']);
+        $taxProfile = TaxProfile::factory()->create(['user_id' => $adminUser->id]);
+
+        // 2) Build valid data but include an extra 'foo' field
+        $invalidData = [
+            'user_id'        => $adminUser->id,
+            'tax_profile_id' => $taxProfile->id,         // Some valid or mock ID
+            'invoice_number' => 'INV-non-existing-invoice',
+            'description'    => 'Invalid Invoice',
+            'invoice_date'   => '2025-02-01',
+            'total_amount'   => 150.00,
+            'status'         => 'pending',
+            'foo'            => 'bar', // Extra field
+        ];
+
+        // 3) We expect a ValidationException
+        $this->expectException(ValidationException::class);
+        // Since Laravel's default top-level message is "The given data was invalid."
+        $this->expectExceptionMessage('The given data was invalid.');
+
+        // 4) Because validation fails, the repository’s create() method should NOT be called.
+        $this->mockInvoiceRepository->shouldNotReceive('create');
+
+        // 5) Attempting to create with the extra field triggers the validation exception.
+        $this->invoiceService->create($adminUser, $invalidData);
     }
 
 

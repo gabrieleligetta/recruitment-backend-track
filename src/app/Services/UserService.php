@@ -5,9 +5,6 @@ namespace App\Services;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Validator;
 
 class UserService extends GeneralService
 {
@@ -23,7 +20,7 @@ class UserService extends GeneralService
      */
     public function getAll(User $authUser, array $requestData = []): LengthAwarePaginator
     {
-        $filters = $this->prepareFilters($authUser, $requestData);
+        $filters = $this->prepareFilters($authUser, $requestData, false);
         return $this->userRepository->all($filters);
     }
 
@@ -55,29 +52,18 @@ class UserService extends GeneralService
             'password' => $isUpdate ? 'sometimes|required|string|min:6' : 'required|string|min:6',
         ];
 
-        $validator = Validator::make($data, $rules);
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        return $validator->validated();
+        return $this->generalValidation($data, $rules);
     }
 
     public function validateSignup(array $data): array
     {
-        $validator = Validator::make($data, [
+        $rules = [
             'name'     => 'required|string|max:255',
             'email'    => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+            'password' => 'required|string|min:6',
+        ];
 
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        $data['password'] = Hash::make($data['password']);
-
-        return $data;
+        return $this->generalValidation($data, $rules);
     }
 
     /**

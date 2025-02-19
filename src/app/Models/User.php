@@ -8,18 +8,73 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use OpenApi\Attributes as OA;
 
-/**
- * App\Models\User
- *
- * @property int $id
- * @property string $role
- * @method static User create(array $attributes)
- * @method static User|null find(mixed $id)
- * @method Builder|User all()
- * @method bool update(array $attributes = [], array $options = [])
- * @method bool delete()
- */
+#[OA\Schema(
+    schema: "User",
+    title: "User Model",
+    description: "User entity for authentication and user management",
+    required: ["name", "email", "password"],
+    properties: [
+        new OA\Property(
+            property: "id",
+            description: "Unique identifier for the user",
+            type: "integer",
+            readOnly: true,
+            example: 1
+        ),
+        new OA\Property(
+            property: "name",
+            description: "Name of the user",
+            type: "string",
+            example: "John Doe"
+        ),
+        new OA\Property(
+            property: "email",
+            description: "Email address of the user",
+            type: "string",
+            format: "email",
+            example: "john@example.com"
+        ),
+        new OA\Property(
+            property: "role",
+            description: "Role assigned to the user",
+            type: "string",
+            enum: ["user", "admin"],
+            example: "user"
+        ),
+        new OA\Property(
+            property: "password",
+            description: "User's password (write-only)",
+            type: "string",
+            writeOnly: true
+        ),
+        new OA\Property(
+            property: "email_verified_at",
+            description: "Timestamp when the user's email was verified",
+            type: "string",
+            format: "date-time",
+            example: "2023-01-15T13:45:30Z",
+            nullable: true
+        ),
+        new OA\Property(
+            property: "created_at",
+            description: "Timestamp when the user was created",
+            type: "string",
+            format: "date-time",
+            readOnly: true,
+            example: "2023-01-15T12:00:00Z"
+        ),
+        new OA\Property(
+            property: "updated_at",
+            description: "Timestamp when the user was last updated",
+            type: "string",
+            format: "date-time",
+            readOnly: true,
+            example: "2023-02-01T08:00:00Z"
+        )
+    ]
+)]
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */

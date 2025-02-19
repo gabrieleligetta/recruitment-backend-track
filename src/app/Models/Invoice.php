@@ -6,24 +6,85 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use OpenApi\Attributes as OA;
 
-/**
- * App\Models\Invoice
- *
- * @property int $id
- * @property int $user_id
- * @property int $tax_profile_id
- * @property string $invoice_number
- * @property string $description
- * @property string $invoice_date
- * @property float $total_amount
- * @property string $status
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @method static Invoice|null find(mixed $id)
- * @method static Invoice create(array $attributes)
- * @method static Builder|Invoice query()
- */
+#[OA\Schema(
+    schema: "Invoice",
+    title: "Invoice",
+    description: "Invoice model representing an invoice issued to a user",
+    required: ["user_id", "tax_profile_id", "invoice_number", "invoice_date", "total_amount", "status"],
+    properties: [
+        new OA\Property(
+            property: "id",
+            description: "Unique identifier for the invoice",
+            type: "integer",
+            readOnly: true,
+            example: 1
+        ),
+        new OA\Property(
+            property: "user_id",
+            description: "ID of the user who owns the invoice",
+            type: "integer",
+            example: 1
+        ),
+        new OA\Property(
+            property: "tax_profile_id",
+            description: "ID of the tax profile associated with the invoice",
+            type: "integer",
+            example: 2
+        ),
+        new OA\Property(
+            property: "invoice_number",
+            description: "Invoice number",
+            type: "string",
+            example: "INV-1001"
+        ),
+        new OA\Property(
+            property: "description",
+            description: "Description of the invoice",
+            type: "string",
+            example: "Invoice for consulting services rendered"
+        ),
+        new OA\Property(
+            property: "invoice_date",
+            description: "Date of the invoice",
+            type: "string",
+            format: "date",
+            example: "2021-12-31"
+        ),
+        new OA\Property(
+            property: "total_amount",
+            description: "Total amount for the invoice",
+            type: "number",
+            format: "float",
+            example: 1234.56
+        ),
+        new OA\Property(
+            property: "status",
+            description: "Current status of the invoice",
+            type: "string",
+            example: "pending"
+        ),
+        new OA\Property(
+            property: "created_at",
+            description: "Timestamp when the invoice was created",
+            type: "string",
+            format: "date-time",
+            readOnly: true,
+            example: "2022-01-01T12:00:00Z",
+            nullable: true
+        ),
+        new OA\Property(
+            property: "updated_at",
+            description: "Timestamp when the invoice was last updated",
+            type: "string",
+            format: "date-time",
+            readOnly: true,
+            example: "2022-01-02T12:00:00Z",
+            nullable: true
+        )
+    ]
+)]
 class Invoice extends Model
 {
     use HasFactory;

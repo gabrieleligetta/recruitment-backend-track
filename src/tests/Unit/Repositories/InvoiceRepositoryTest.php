@@ -7,6 +7,7 @@ use App\Models\TaxProfile;
 use App\Models\Invoice;
 use App\Repositories\InvoiceRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -94,8 +95,8 @@ class InvoiceRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Drop all tables and re-run migrations for a fresh DB
+        Artisan::call('migrate:fresh');
         $this->invoiceRepository = new InvoiceRepository();
     }
-
-    // ...rest of your tests (filter by total_amount, status, etc.) updated similarly...
 }

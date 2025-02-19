@@ -1,7 +1,10 @@
 # ──────────────────────────────────────────────────────────
-# BASE STAGE
+# DEVELOPMENT STAGE
 # ──────────────────────────────────────────────────────────
-FROM php:8.3-fpm AS base
+FROM php:8.3-fpm AS development
+
+# Set working directory
+WORKDIR /var/www/invoices_app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -18,55 +21,52 @@ RUN apt-get update && apt-get install -y \
 # Install Composer globally
 COPY --from=composer:2.5 /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www/invoices_app
+# Set environment variables
+ENV APP_ENV=development
+ENV APP_DEBUG=true
 
-# Copy Composer files first to leverage caching
+# Copy composer files and install dependencies
 COPY src/composer.json src/composer.lock ./
+RUN composer install --no-scripts
 
-# Build argument to toggle dev or prod dependencies
-ARG APP_ENV=production
-RUN echo "Building with APP_ENV=$APP_ENV"
-
-# Install dependencies (conditional dev vs. prod)
-RUN if [ "$APP_ENV" = "development" ]; then \
-    composer install --no-scripts; \
-  else \
-    composer install --no-dev --no-scripts --no-autoloader; \
-  fi
-
-# Copy the full Laravel app
+# Copy Laravel application
 COPY src/ /var/www/invoices_app
+
+# Set correct permissions
+RUN chown -R www-data:www-data /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache \
+    && chmod -R 775 /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache
 
 # Optimize autoload
 RUN composer dump-autoload --optimize
 
-# ──────────────────────────────────────────────────────────
-# DEVELOPMENT STAGE
-# ──────────────────────────────────────────────────────────
-FROM base AS development
-
-# Set environment for dev
-ENV APP_ENV=development
-ENV APP_DEBUG=true
-
-# Fix storage permissions if needed
-RUN chown -R www-data:www-data /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache \
-    && chmod -R 775 /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache
-
-# Command for dev: using php-fpm
+# Command for development
 CMD ["php-fpm"]
 
 # ──────────────────────────────────────────────────────────
 # PRODUCTION STAGE
 # ──────────────────────────────────────────────────────────
-FROM base AS production
+FROM php:8.3-fpm-alpine AS production
 
+# Set working directory
+WORKDIR /var/www/invoices_app
+
+# Install required dependencies
+RUN apk add --no-cache bash curl zip libzip libpq
+
+# Set environment variables
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 
-# Fix storage permissions if needed
+# Copy Laravel application from development stage
+COPY --from=development /var/www/invoices_app /var/www/invoices_app
+
+# Remove dev dependencies and optimize autoload
+RUN composer install --no-dev --no-scripts --no-autoloader \
+    && composer dump-autoload --optimize
+
+# Set correct permissions
 RUN chown -R www-data:www-data /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache \
     && chmod -R 775 /var/www/invoices_app/storage /var/www/invoices_app/bootstrap/cache
 
+# Command for production
 CMD ["php-fpm"]
