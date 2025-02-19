@@ -20,28 +20,28 @@ class UserServiceTest extends TestCase
     #[Test]
     public function it_returns_a_paginated_list_of_users(): void
     {
-        // ✅ Create a fake user
+        //Create a fake user
         $user = User::factory()->create();
 
-        // ✅ Create a fake paginator with mock data
+        //Create a fake paginator with mock data
         $fakePaginator = new Paginator(new Collection([]), 0, 10);
 
-        // ✅ Mock repository behavior
+        //Mock repository behavior
         $this->mockUserRepository
             ->shouldReceive('all')
             ->once()
             ->andReturn($fakePaginator);
 
-        // ✅ Call the service method
+        //Call the service method
         $result = $this->userService->getAll($user, []);
 
-        // ✅ Assertions
+        //Assertions
         $this->assertInstanceOf(LengthAwarePaginator::class, $result);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Get All Users (getAll)
+    |Test: Get All Users (getAll)
     |--------------------------------------------------------------------------
     */
 
@@ -64,7 +64,7 @@ class UserServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Find User By ID (getById)
+    |Test: Find User By ID (getById)
     |--------------------------------------------------------------------------
     */
 
@@ -107,7 +107,7 @@ class UserServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Create User (create)
+    |Test: Create User (create)
     |--------------------------------------------------------------------------
     */
 
@@ -131,7 +131,7 @@ class UserServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Update User (update)
+    |Test: Update User (update)
     |--------------------------------------------------------------------------
     */
 
@@ -165,7 +165,7 @@ class UserServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Delete User (delete)
+    |Test: Delete User (delete)
     |--------------------------------------------------------------------------
     */
 
@@ -187,16 +187,16 @@ class UserServiceTest extends TestCase
     {
         parent::setUp();
 
-        // ✅ Mock UserRepository
+        //Mock UserRepository
         $this->mockUserRepository = Mockery::mock(UserRepository::class);
 
-        // ✅ Inject the mocked repository into UserService
+        //Inject the mocked repository into UserService
         $this->userService = new UserService($this->mockUserRepository);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Cleanup Mockery
+    |Cleanup Mockery
     |--------------------------------------------------------------------------
     */
 

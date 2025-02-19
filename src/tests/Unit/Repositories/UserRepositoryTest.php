@@ -4,6 +4,7 @@ namespace Tests\Unit\Repositories;
 
 use App\Models\User;
 use App\Repositories\UserRepository;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
@@ -14,6 +15,7 @@ class UserRepositoryTest extends TestCase
     use RefreshDatabase;
 
     protected UserRepository $userRepository;
+
 
     #[Test]
     public function it_can_filter_users_by_exact_name(): void

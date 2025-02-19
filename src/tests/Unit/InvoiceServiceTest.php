@@ -77,11 +77,11 @@ class InvoiceServiceTest extends TestCase
     public function it_creates_a_new_invoice(): void
     {
         $authUser = User::factory()->create(['role' => 'admin']);
-        $taxProfile = TaxProfile::factory()->create(['user_id' => $authUser->id]); // ✅ Ensure a valid tax profile exists
+        $taxProfile = TaxProfile::factory()->create(['user_id' => $authUser->id]); //Ensure a valid tax profile exists
 
         $invoiceData = [
             'user_id'        => $authUser->id,
-            'tax_profile_id' => $taxProfile->id, // ✅ Use the created tax profile
+            'tax_profile_id' => $taxProfile->id, //Use the created tax profile
             'invoice_number' => 'INV-1234',
             'description'    => 'Test Invoice',
             'invoice_date'   => '2025-02-01',
@@ -108,12 +108,12 @@ class InvoiceServiceTest extends TestCase
     public function it_updates_an_existing_invoice(): void
     {
         $authUser = User::factory()->create();
-        $taxProfile = TaxProfile::factory()->create(['user_id' => $authUser->id]); // ✅ Ensure a valid tax profile exists
+        $taxProfile = TaxProfile::factory()->create(['user_id' => $authUser->id]); //Ensure a valid tax profile exists
         $invoice = Invoice::factory()->make(['id' => 1, 'user_id' => $authUser->id]);
 
         $updatedData = [
-            'tax_profile_id' => $taxProfile->id, // ✅ Use the created tax profile
-            'user_id'        => $authUser->id, // ✅ Ensure user_id is passed
+            'tax_profile_id' => $taxProfile->id, //Use the created tax profile
+            'user_id'        => $authUser->id, //Ensure user_id is passed
             'invoice_number' => 'INV-5678',
         ];
 
@@ -202,10 +202,10 @@ class InvoiceServiceTest extends TestCase
     {
         parent::setUp();
 
-        // ✅ Mock InvoiceRepository
+        //Mock InvoiceRepository
         $this->mockInvoiceRepository = Mockery::mock(InvoiceRepository::class);
 
-        // ✅ Inject the mocked repository into InvoiceService
+        //Inject the mocked repository into InvoiceService
         $this->invoiceService = new InvoiceService($this->mockInvoiceRepository);
     }
 

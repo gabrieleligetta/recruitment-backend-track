@@ -33,9 +33,9 @@ class TaxProfileService extends GeneralService
     {
         $this->authorizeAdminOrOwner($authUser, $authUser->id);
 
-        // ✅ Ensure non-admin users can only create their own tax profile
+        //Ensure non-admin users can only create their own tax profile
         if ($authUser->role !== 'admin') {
-            $data['user_id'] = $authUser->id; // ✅ Set user_id if not provided
+            $data['user_id'] = $authUser->id; //Set user_id if not provided
         }
 
         $validatedData = $this->validateProfile($data, false);
@@ -95,7 +95,7 @@ class TaxProfileService extends GeneralService
         }
 
         try {
-            // ✅ Ensure only admins or the owner can access the profile
+            //Ensure only admins or the owner can access the profile
             $this->authorizeAdminOrOwner($authUser, $profile->user_id);
         } catch (AuthorizationException $e) {
             throw new AuthorizationException('Forbidden', 403);

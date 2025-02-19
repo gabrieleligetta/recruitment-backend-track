@@ -38,7 +38,7 @@ class TaxProfileServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Get All Tax Profiles (getAll)
+    |Test: Get All Tax Profiles (getAll)
     |--------------------------------------------------------------------------
     */
 
@@ -62,7 +62,7 @@ class TaxProfileServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Find Tax Profile By ID (getById)
+    |Test: Find Tax Profile By ID (getById)
     |--------------------------------------------------------------------------
     */
 
@@ -102,7 +102,7 @@ class TaxProfileServiceTest extends TestCase
             ->shouldReceive('create')
             ->with(Mockery::on(function ($arg) use ($taxProfileData) {
                 return array_intersect_assoc($arg, $taxProfileData) === $taxProfileData;
-            })) // ✅ Matches only expected fields, ignoring any automatic changes
+            })) //Matches only expected fields, ignoring any automatic changes
             ->once()
             ->andReturn($taxProfile);
 
@@ -115,17 +115,17 @@ class TaxProfileServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Create Tax Profile (create)
+    |Test: Create Tax Profile (create)
     |--------------------------------------------------------------------------
     */
 
     #[Test]
     public function it_updates_an_existing_tax_profile(): void
     {
-        $authUser = User::factory()->create(); // ✅ Ensure user ID is generated uniquely
+        $authUser = User::factory()->create(); //Ensure user ID is generated uniquely
 
         $updatedData = [
-            'user_id'      => $authUser->id, // ✅ Ensure valid user ID
+            'user_id'      => $authUser->id, //Ensure valid user ID
             'company_name' => 'Updated Corp',
         ];
         $taxProfile = TaxProfile::factory()->create(['user_id' => $authUser->id, 'company_name' => 'Old Corp']);
@@ -155,7 +155,7 @@ class TaxProfileServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Update Tax Profile (update)
+    |Test: Update Tax Profile (update)
     |--------------------------------------------------------------------------
     */
 
@@ -181,14 +181,14 @@ class TaxProfileServiceTest extends TestCase
         $regularUser = User::factory()->create(['role' => 'user']);
         $taxProfile = TaxProfile::factory()->make(['id' => 1, 'user_id' => $regularUser->id]);
 
-        // ✅ Mock `findById()` first
+        //Mock `findById()` first
         $this->mockTaxProfileRepository
             ->shouldReceive('findById')
             ->with($taxProfile->id)
             ->once()
             ->andReturn($taxProfile);
 
-        // ✅ Then mock `delete()`
+        //Then mock `delete()`
         $this->mockTaxProfileRepository
             ->shouldReceive('delete')
             ->with($taxProfile->id)
@@ -203,7 +203,7 @@ class TaxProfileServiceTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Test: Delete Tax Profile (delete)
+    |Test: Delete Tax Profile (delete)
     |--------------------------------------------------------------------------
     */
 
@@ -212,14 +212,14 @@ class TaxProfileServiceTest extends TestCase
     {
         $regularUser = User::factory()->create(['role' => 'user']);
 
-        // ✅ Mock `findById()` to return `null`
+        //Mock `findById()` to return `null`
         $this->mockTaxProfileRepository
             ->shouldReceive('findById')
             ->with(999)
             ->once()
             ->andReturn(null);
 
-        // ✅ Mock `delete()` should not be called if the profile is not found
+        //Mock `delete()` should not be called if the profile is not found
         $this->mockTaxProfileRepository
             ->shouldReceive('delete')
             ->never();
@@ -294,7 +294,7 @@ class TaxProfileServiceTest extends TestCase
 
         $this->expectException(AuthorizationException::class);
 
-        $this->taxProfileService->delete($regularUser, $taxProfile->id); // ✅ Pass the correct user
+        $this->taxProfileService->delete($regularUser, $taxProfile->id); //Pass the correct user
     }
 
 
@@ -302,16 +302,16 @@ class TaxProfileServiceTest extends TestCase
     {
         parent::setUp();
 
-        // ✅ Mock TaxProfileRepository
+        //Mock TaxProfileRepository
         $this->mockTaxProfileRepository = Mockery::mock(TaxProfileRepository::class);
 
-        // ✅ Inject the mocked repository into TaxProfileService
+        //Inject the mocked repository into TaxProfileService
         $this->taxProfileService = new TaxProfileService($this->mockTaxProfileRepository);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ Cleanup Mockery
+    |Cleanup Mockery
     |--------------------------------------------------------------------------
     */
 

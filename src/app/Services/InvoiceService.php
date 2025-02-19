@@ -32,10 +32,10 @@ class InvoiceService extends GeneralService
      */
     public function create(User $authUser, array $data): Invoice
     {
-        // ✅ Validate the data
+        //Validate the data
         $validatedData = $this->validateInvoice($data, false);
 
-        // ✅ Ensure non-admins can only create their own invoices
+        //Ensure non-admins can only create their own invoices
         if ($authUser->role !== 'admin') {
             $validatedData['user_id'] = $authUser->id;
         }
@@ -75,7 +75,7 @@ class InvoiceService extends GeneralService
         $invoice = $this->getById($authUser, $id);
         if (!$invoice) return null;
 
-        // ✅ Ensure only admins or the owner can update the invoice
+        //Ensure only admins or the owner can update the invoice
         $this->authorizeAdminOrOwner($authUser, $invoice->user_id);
 
         $validatedData = $this->validateInvoice($data, true, $id);
@@ -93,7 +93,7 @@ class InvoiceService extends GeneralService
             return null;
         }
 
-        // ✅ Ensure only admins or the owner can view the invoice
+        //Ensure only admins or the owner can view the invoice
         $this->authorizeAdminOrOwner($authUser, $invoice->user_id);
 
         return $invoice;
@@ -107,7 +107,7 @@ class InvoiceService extends GeneralService
         $invoice = $this->getById($authUser, $id);
         if (!$invoice) return false;
 
-        // ✅ Ensure only admins or the owner can delete the invoice
+        //Ensure only admins or the owner can delete the invoice
         $this->authorizeAdminOrOwner($authUser, $invoice->user_id);
 
         return $this->invoiceRepository->delete($id);

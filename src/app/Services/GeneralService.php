@@ -33,7 +33,7 @@ abstract class GeneralService
     {
         $params = ['filters' => []];
 
-        // ✅ Ensure non-admin users can only fetch their own tax profiles
+        //Ensure non-admin users can only fetch their own tax profiles
         if ($authUser->role !== 'admin') {
             $params['filters'][] = [
                 'field'     => 'user_id',
@@ -43,18 +43,18 @@ abstract class GeneralService
             ];
         }
 
-        // ✅ Merge additional filters from request
+        //Merge additional filters from request
         if (isset($requestData['filters']) && is_array($requestData['filters'])) {
             $params['filters'] = array_merge($params['filters'], $requestData['filters']);
         }
 
-        // ✅ Handle sorting
+        //Handle sorting
         if (isset($requestData['sort']) && is_array($requestData['sort'])) {
             $params['sort_by'] = $requestData['sort']['field'] ?? null;
             $params['sort_dir'] = $requestData['sort']['direction'] ?? 'asc';
         }
 
-        // ✅ Set limit
+        //Set limit
         if (isset($requestData['limit'])) {
             $params['limit'] = $requestData['limit'];
         }
