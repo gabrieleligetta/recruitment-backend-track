@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use OpenApi\Attributes as OA;
 
 #[OA\Tag(name: "Auth", description: "Authentication endpoints")]
@@ -53,7 +52,8 @@ class AuthController extends Controller
     {
         $validatedData = $this->userService->validateSignup($request->all());
         $user = $this->userService->create($validatedData);
-        $token = JWTAuth::fromUser($user);
+        $credentials = $request->only('email', 'password');
+        $token = auth('api')->attempt($credentials);
 
         return response()->json([
             'user'  => $user,
@@ -102,7 +102,7 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
-        if (!$token = JWTAuth::attempt($credentials)) {
+        if (!$token = auth('api')->attempt($credentials)) {
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
