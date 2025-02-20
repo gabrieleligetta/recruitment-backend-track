@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -123,6 +124,21 @@ class User extends Authenticatable implements JWTSubject
         return $this->role === 'admin';
     }
 
+    /**
+     * Relationship: A User has many TaxProfiles
+     */
+    public function taxProfiles(): HasMany
+    {
+        return $this->hasMany(TaxProfile::class);
+    }
+
+    /**
+     * Relationship: A User has many Invoices (through TaxProfile)
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
 
     protected function casts(): array
     {
@@ -131,4 +147,7 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
         ];
     }
+
+
+
 }
