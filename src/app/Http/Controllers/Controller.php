@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpFoundation\Response as ResponseAlias;
+use Symfony\Component\HttpFoundation\Response as HTTPCode;
 
 abstract class Controller extends BaseController
 {
@@ -28,7 +28,7 @@ abstract class Controller extends BaseController
 
         if (!$authUser instanceof User) {
             Log::error('Unauthorized access attempt detected');
-            abort(ResponseAlias::HTTP_UNAUTHORIZED, 'Unauthorized');
+            abort(HTTPCode::HTTP_UNAUTHORIZED, 'Unauthorized');
         }
 
         return $authUser;

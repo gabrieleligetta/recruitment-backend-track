@@ -8,7 +8,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpFoundation\Response as ResponseAlias;
+use Symfony\Component\HttpFoundation\Response as HTTPCode;
 use OpenApi\Attributes as OA;
 use Throwable;
 
@@ -50,10 +50,10 @@ class UserController extends Controller
         try {
             $authUser = $this->getAuthenticatedUser();
             $data = $request->json()->all() ?: $request->query();
-            return response()->json($this->userService->getAll($authUser, $data), ResponseAlias::HTTP_OK);
+            return response()->json($this->userService->getAll($authUser, $data), HTTPCode::HTTP_OK);
         } catch (Throwable $e) {
             Log::error('Error fetching user list', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -94,13 +94,13 @@ class UserController extends Controller
         try {
             $user = $this->userService->getById($id);
             return $user
-                ? response()->json($user, ResponseAlias::HTTP_OK)
-                : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+                ? response()->json($user, HTTPCode::HTTP_OK)
+                : $this->errorResponse('User not found', HTTPCode::HTTP_NOT_FOUND);
         } catch (AuthorizationException $e) {
-            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Forbidden'], HTTPCode::HTTP_FORBIDDEN);
         } catch (Throwable $e) {
             Log::error('Error retrieving user', ['user_id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -135,14 +135,14 @@ class UserController extends Controller
         try {
             $authUser = $this->getAuthenticatedUser();
             $this->userService->authorizeAdmin($authUser);
-            return response()->json($this->userService->create($request->all()), ResponseAlias::HTTP_CREATED);
+            return response()->json($this->userService->create($request->all()), HTTPCode::HTTP_CREATED);
         } catch (AuthorizationException $e) {
-            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Forbidden'], HTTPCode::HTTP_FORBIDDEN);
         } catch (ValidationException $e) {
-            return response()->json(['message' => $e->errors()], ResponseAlias::HTTP_UNPROCESSABLE_ENTITY);
+            return response()->json(['message' => $e->errors()], HTTPCode::HTTP_UNPROCESSABLE_ENTITY);
         } catch (Throwable $e) {
             Log::error('Error creating user', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -194,13 +194,13 @@ class UserController extends Controller
             $user = $this->userService->update($id, $request->all());
 
             return $user
-                ? response()->json($user, ResponseAlias::HTTP_OK)
-                : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+                ? response()->json($user, HTTPCode::HTTP_OK)
+                : $this->errorResponse('User not found', HTTPCode::HTTP_NOT_FOUND);
         } catch (AuthorizationException $e) {
-            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Forbidden'], HTTPCode::HTTP_FORBIDDEN);
         } catch (Throwable $e) {
             Log::error('Error updating user', ['user_id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -247,13 +247,13 @@ class UserController extends Controller
             $this->userService->authorizeAdmin($authUser);
 
             return $this->userService->delete($id)
-                ? response()->json(['message' => 'User deleted'], ResponseAlias::HTTP_OK)
-                : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+                ? response()->json(['message' => 'User deleted'], HTTPCode::HTTP_OK)
+                : $this->errorResponse('User not found', HTTPCode::HTTP_NOT_FOUND);
         } catch (AuthorizationException $e) {
-            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Forbidden'], HTTPCode::HTTP_FORBIDDEN);
         } catch (Throwable $e) {
             Log::error('Error deleting user', ['user_id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

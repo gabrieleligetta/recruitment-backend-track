@@ -6,7 +6,9 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Throwable;
+use Symfony\Component\HttpFoundation\Response as HTTPCode;
 
 class Handler extends ExceptionHandler
 {
@@ -46,7 +48,7 @@ class Handler extends ExceptionHandler
     : void
     {
         $this->reportable(function (Throwable $e) {
-            // You can add custom reporting logic here.
+            Log::error($e->getMessage());
         });
     }
 
@@ -59,8 +61,9 @@ class Handler extends ExceptionHandler
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     : JsonResponse {
+        Log::error($exception->getMessage());
         return response()->json([
             'message' => 'Il token non è valido o è scaduto, per favore effettua di nuovo la login.'
-        ], 401);
+        ], HTTPCode::HTTP_UNAUTHORIZED);
     }
 }

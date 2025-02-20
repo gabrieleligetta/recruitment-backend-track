@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response as HTTPCode;
 
 #[OA\Tag(name: "Auth", description: "Authentication endpoints")]
 #[OA\PathItem(path: "/api/auth")]
@@ -69,7 +70,7 @@ class AuthController extends Controller
             ], 201);
         } catch (Exception $e) {
             Log::error('Signup failed', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Signup failed'], 500);
+            return response()->json(['error' => 'Signup failed'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -118,7 +119,7 @@ class AuthController extends Controller
 
         if (!$token = auth('api')->attempt($credentials)) {
             Log::warning('Login failed due to invalid credentials', ['email' => $request->email]);
-            return response()->json(['error' => 'Invalid credentials'], 401);
+            return response()->json(['error' => 'Invalid credentials'], HTTPCode::HTTP_UNAUTHORIZED);
         }
 
         Log::info('User logged in successfully', ['email' => $request->email]);
@@ -146,7 +147,7 @@ class AuthController extends Controller
 
         if (!$user) {
             Log::warning('Attempt to access /me without authentication');
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json(['error' => 'Unauthorized'], HTTPCode::HTTP_UNAUTHORIZED);
         }
 
         Log::info('User fetched profile', ['user_id' => $user->id]);

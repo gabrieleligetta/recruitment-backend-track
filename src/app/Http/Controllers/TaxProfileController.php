@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpFoundation\Response as ResponseAlias;
+use Symfony\Component\HttpFoundation\Response as HTTPCode;
 use OpenApi\Attributes as OA;
 use Throwable;
 
@@ -50,10 +50,10 @@ class TaxProfileController extends Controller
         try {
             $authUser = $this->getAuthenticatedUser();
             $data = $request->json()->all() ?: $request->query();
-            return response()->json($this->taxProfileService->getAll($authUser, $data), ResponseAlias::HTTP_OK);
+            return response()->json($this->taxProfileService->getAll($authUser, $data), HTTPCode::HTTP_OK);
         } catch (Throwable $e) {
             Log::error('Error fetching tax profiles', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -96,16 +96,16 @@ class TaxProfileController extends Controller
             $profile = $this->taxProfileService->getById($authUser, $id);
 
             return $profile
-                ? response()->json($profile, ResponseAlias::HTTP_OK)
-                : $this->errorResponse('Tax Profile not found', ResponseAlias::HTTP_NOT_FOUND);
+                ? response()->json($profile, HTTPCode::HTTP_OK)
+                : $this->errorResponse('Tax Profile not found', HTTPCode::HTTP_NOT_FOUND);
         }
         catch (AuthorizationException $e) {
             Log::error('Error creating tax profile', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Forbidden'], HTTPCode::HTTP_FORBIDDEN);
         }
         catch (Throwable $e) {
             Log::error('Error retrieving tax profile', ['tax_profile_id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -162,16 +162,16 @@ class TaxProfileController extends Controller
             $authUser = $this->getAuthenticatedUser();
             $profile = $this->taxProfileService->create($authUser, $request->all());
 
-            return response()->json($profile, ResponseAlias::HTTP_CREATED);
+            return response()->json($profile, HTTPCode::HTTP_CREATED);
         } catch (AuthorizationException $e) {
             Log::error('Error creating tax profile', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Forbidden'], HTTPCode::HTTP_FORBIDDEN);
         } catch (ValidationException $e) {
             Log::error('Error creating tax profile', ['error' => $e->getMessage()]);
-            return response()->json(['message' => $e->errors()], ResponseAlias::HTTP_UNPROCESSABLE_ENTITY);
+            return response()->json(['message' => $e->errors()], HTTPCode::HTTP_UNPROCESSABLE_ENTITY);
         } catch (Throwable $e) {
             Log::error('Error creating tax profile', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -231,14 +231,14 @@ class TaxProfileController extends Controller
             $profile = $this->taxProfileService->update($authUser, $id, $request->all());
 
             return $profile
-                ? response()->json($profile, ResponseAlias::HTTP_OK)
-                : $this->errorResponse('Tax Profile not found', ResponseAlias::HTTP_NOT_FOUND);
+                ? response()->json($profile, HTTPCode::HTTP_OK)
+                : $this->errorResponse('Tax Profile not found', HTTPCode::HTTP_NOT_FOUND);
         } catch (AuthorizationException $e) {
             Log::error('Error updating tax profile', ['tax_profile_id' => $id, 'error' => $e->getMessage()]);
-            return $this->errorResponse('Forbidden', ResponseAlias::HTTP_FORBIDDEN);
+            return $this->errorResponse('Forbidden', HTTPCode::HTTP_FORBIDDEN);
         } catch (Throwable $e) {
             Log::error('Error updating tax profile', ['tax_profile_id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -293,14 +293,14 @@ class TaxProfileController extends Controller
             $authUser = $this->getAuthenticatedUser();
 
             return $this->taxProfileService->delete($authUser, $id)
-                ? response()->json(['message' => 'Tax Profile deleted'], ResponseAlias::HTTP_OK)
-                : $this->errorResponse('Tax Profile not found', ResponseAlias::HTTP_NOT_FOUND);
+                ? response()->json(['message' => 'Tax Profile deleted'], HTTPCode::HTTP_OK)
+                : $this->errorResponse('Tax Profile not found', HTTPCode::HTTP_NOT_FOUND);
         } catch (AuthorizationException $e) {
             Log::error('Error deleting tax profile', ['tax_profile_id' => $id, 'error' => $e->getMessage()]);
-            return $this->errorResponse('Forbidden', ResponseAlias::HTTP_FORBIDDEN);
+            return $this->errorResponse('Forbidden', HTTPCode::HTTP_FORBIDDEN);
         } catch (Throwable $e) {
             Log::error('Error deleting tax profile', ['tax_profile_id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Server Error'], HTTPCode::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

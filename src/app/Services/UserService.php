@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class UserService extends GeneralService
 {
@@ -20,8 +22,13 @@ class UserService extends GeneralService
      */
     public function getAll(User $authUser, array $requestData = []): LengthAwarePaginator
     {
-        $filters = $this->prepareFilters($authUser, $requestData, false);
-        return $this->userRepository->all($filters);
+        try {
+            $filters = $this->prepareFilters($authUser, $requestData, false);
+            return $this->userRepository->all($filters);
+        } catch (Throwable $e) {
+            Log::error('Error fetching users', ['error' => $e->getMessage()]);
+            throw $e;
+        }
     }
 
     /**
@@ -29,7 +36,12 @@ class UserService extends GeneralService
      */
     public function getById(int $id): ?User
     {
-        return $this->userRepository->findById($id);
+        try {
+            return $this->userRepository->findById($id);
+        } catch (Throwable $e) {
+            Log::error('Error fetching user by ID', ['user_id' => $id, 'error' => $e->getMessage()]);
+            throw $e;
+        }
     }
 
     /**
@@ -37,8 +49,13 @@ class UserService extends GeneralService
      */
     public function create(array $data): User
     {
-        $validatedData = $this->validateUser($data, false);
-        return $this->userRepository->create($validatedData);
+        try {
+            $validatedData = $this->validateUser($data, false);
+            return $this->userRepository->create($validatedData);
+        } catch (Throwable $e) {
+            Log::error('Error creating user', ['error' => $e->getMessage()]);
+            throw $e;
+        }
     }
 
     /**
@@ -46,24 +63,34 @@ class UserService extends GeneralService
      */
     private function validateUser(array $data, bool $isUpdate = false, ?int $id = null): array
     {
-        $rules = [
-            'name'     => 'sometimes|required|string|max:255',
-            'email'    => "sometimes|required|email|unique:users,email," . ($id ?? 'NULL'),
-            'password' => $isUpdate ? 'sometimes|required|string|min:6' : 'required|string|min:6',
-        ];
+        try {
+            $rules = [
+                'name'     => 'sometimes|required|string|max:255',
+                'email'    => "sometimes|required|email|unique:users,email," . ($id ?? 'NULL'),
+                'password' => $isUpdate ? 'sometimes|required|string|min:6' : 'required|string|min:6',
+            ];
 
-        return $this->generalValidation($data, $rules);
+            return $this->generalValidation($data, $rules);
+        } catch (Throwable $e) {
+            Log::error('User validation failed', ['error' => $e->getMessage()]);
+            throw $e;
+        }
     }
 
     public function validateSignup(array $data): array
     {
-        $rules = [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
-        ];
+        try {
+            $rules = [
+                'name'     => 'required|string|max:255',
+                'email'    => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:6',
+            ];
 
-        return $this->generalValidation($data, $rules);
+            return $this->generalValidation($data, $rules);
+        } catch (Throwable $e) {
+            Log::error('Signup validation failed', ['error' => $e->getMessage()]);
+            throw $e;
+        }
     }
 
     /**
@@ -71,8 +98,13 @@ class UserService extends GeneralService
      */
     public function update(int $id, array $data): ?User
     {
-        $validatedData = $this->validateUser($data, true, $id);
-        return $this->userRepository->update($id, $validatedData);
+        try {
+            $validatedData = $this->validateUser($data, true, $id);
+            return $this->userRepository->update($id, $validatedData);
+        } catch (Throwable $e) {
+            Log::error('Error updating user', ['user_id' => $id, 'error' => $e->getMessage()]);
+            throw $e;
+        }
     }
 
     /**
@@ -80,6 +112,11 @@ class UserService extends GeneralService
      */
     public function delete(int $id): bool
     {
-        return $this->userRepository->delete($id);
+        try {
+            return $this->userRepository->delete($id);
+        } catch (Throwable $e) {
+            Log::error('Error deleting user', ['user_id' => $id, 'error' => $e->getMessage()]);
+            throw $e;
+        }
     }
 }
