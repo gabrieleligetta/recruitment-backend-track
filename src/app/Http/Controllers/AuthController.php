@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\UserService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use OpenApi\Attributes as OA;
 
 #[OA\Tag(name: "Auth", description: "Authentication endpoints")]
@@ -50,15 +53,24 @@ class AuthController extends Controller
     )]
     public function signup(Request $request): JsonResponse
     {
-        $validatedData = $this->userService->validateSignup($request->all());
-        $user = $this->userService->create($validatedData);
-        $credentials = $request->only('email', 'password');
-        $token = auth('api')->attempt($credentials);
+        Log::info('Signup request received', ['email' => $request->email]);
 
-        return response()->json([
-            'user'  => $user,
-            'token' => $token,
-        ], 201);
+        try {
+            $validatedData = $this->userService->validateSignup($request->all());
+            $user = $this->userService->create($validatedData);
+            $credentials = $request->only('email', 'password');
+            $token = auth('api')->attempt($credentials);
+
+            Log::info('User signed up successfully', ['user_id' => $user->id]);
+
+            return response()->json([
+                'user'  => $user,
+                'token' => $token,
+            ], 201);
+        } catch (Exception $e) {
+            Log::error('Signup failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Signup failed'], 500);
+        }
     }
 
     #[OA\Post(
@@ -100,11 +112,16 @@ class AuthController extends Controller
     )]
     public function login(Request $request): JsonResponse
     {
+        Log::info('Login attempt', ['email' => $request->email]);
+
         $credentials = $request->only('email', 'password');
 
         if (!$token = auth('api')->attempt($credentials)) {
+            Log::warning('Login failed due to invalid credentials', ['email' => $request->email]);
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
+
+        Log::info('User logged in successfully', ['email' => $request->email]);
 
         return response()->json(['token' => $token]);
     }
@@ -124,7 +141,16 @@ class AuthController extends Controller
         ]
     )]
     public function me(): JsonResponse
-    {
-        return response()->json(auth()->user());
+    {   /** @var User|null $user */
+        $user = auth()->user();
+
+        if (!$user) {
+            Log::warning('Attempt to access /me without authentication');
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        Log::info('User fetched profile', ['user_id' => $user->id]);
+
+        return response()->json($user);
     }
 }

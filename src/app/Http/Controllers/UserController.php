@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Services\UserService;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use OpenApi\Attributes as OA;
+use Throwable;
 
 #[OA\Tag(name: "User", description: "Operations about users")]
 class UserController extends Controller
@@ -43,11 +47,14 @@ class UserController extends Controller
     )]
     public function list(Request $request): JsonResponse
     {
-        $authUser = $this->getAuthenticatedUser();
-        $data = $request->json()->all() ?: $request->query();
-        $users = $this->userService->getAll($authUser, $data);
-
-        return response()->json($users, ResponseAlias::HTTP_OK);
+        try {
+            $authUser = $this->getAuthenticatedUser();
+            $data = $request->json()->all() ?: $request->query();
+            return response()->json($this->userService->getAll($authUser, $data), ResponseAlias::HTTP_OK);
+        } catch (Throwable $e) {
+            Log::error('Error fetching user list', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[OA\Get(
@@ -84,10 +91,17 @@ class UserController extends Controller
     )]
     public function show(int $id): JsonResponse
     {
-        $user = $this->userService->getById($id);
-        return $user
-            ? response()->json($user, ResponseAlias::HTTP_OK)
-            : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+        try {
+            $user = $this->userService->getById($id);
+            return $user
+                ? response()->json($user, ResponseAlias::HTTP_OK)
+                : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+        } catch (Throwable $e) {
+            Log::error('Error retrieving user', ['user_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[OA\Post(
@@ -118,10 +132,18 @@ class UserController extends Controller
     )]
     public function store(Request $request): JsonResponse
     {
-        $authUser = $this->getAuthenticatedUser();
-        $this->userService->authorizeAdmin($authUser);
-        $user = $this->userService->create($request->all());
-        return response()->json($user, ResponseAlias::HTTP_CREATED);
+        try {
+            $authUser = $this->getAuthenticatedUser();
+            $this->userService->authorizeAdmin($authUser);
+            return response()->json($this->userService->create($request->all()), ResponseAlias::HTTP_CREATED);
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => $e->errors()], ResponseAlias::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (Throwable $e) {
+            Log::error('Error creating user', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[OA\Put(
@@ -166,12 +188,20 @@ class UserController extends Controller
     )]
     public function update(Request $request, int $id): JsonResponse
     {
-        $authUser = $this->getAuthenticatedUser();
-        $this->userService->authorizeAdminOrOwner($authUser, $id);
-        $user = $this->userService->update($id, $request->all());
-        return $user
-            ? response()->json($user, ResponseAlias::HTTP_OK)
-            : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+        try {
+            $authUser = $this->getAuthenticatedUser();
+            $this->userService->authorizeAdminOrOwner($authUser, $id);
+            $user = $this->userService->update($id, $request->all());
+
+            return $user
+                ? response()->json($user, ResponseAlias::HTTP_OK)
+                : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+        } catch (Throwable $e) {
+            Log::error('Error updating user', ['user_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[OA\Delete(
@@ -212,11 +242,18 @@ class UserController extends Controller
     )]
     public function destroy(int $id): JsonResponse
     {
-        $authUser = $this->getAuthenticatedUser();
-        $this->userService->authorizeAdmin($authUser);
+        try {
+            $authUser = $this->getAuthenticatedUser();
+            $this->userService->authorizeAdmin($authUser);
 
-        return $this->userService->delete($id)
-            ? response()->json(['message' => 'User deleted'], ResponseAlias::HTTP_OK)
-            : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+            return $this->userService->delete($id)
+                ? response()->json(['message' => 'User deleted'], ResponseAlias::HTTP_OK)
+                : $this->errorResponse('User not found', ResponseAlias::HTTP_NOT_FOUND);
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+        } catch (Throwable $e) {
+            Log::error('Error deleting user', ['user_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

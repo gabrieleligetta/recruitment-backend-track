@@ -6,6 +6,7 @@ use App\Services\InvoiceService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Throwable;
@@ -46,12 +47,15 @@ class InvoiceController extends Controller
     )]
     public function list(Request $request): JsonResponse
     {
-        $authUser = $this->getAuthenticatedUser();
-        $data = $request->json()->all() ?: $request->query();
+        try {
+            $authUser = $this->getAuthenticatedUser();
+            $data = $request->json()->all() ?: $request->query();
 
-        $invoices = $this->invoiceService->getAll($authUser, $data);
-
-        return response()->json($invoices, ResponseAlias::HTTP_OK);
+            return response()->json($this->invoiceService->getAll($authUser, $data), ResponseAlias::HTTP_OK);
+        } catch (Throwable $e) {
+            Log::error('Error fetching invoice list', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[OA\Get(
@@ -100,12 +104,13 @@ class InvoiceController extends Controller
     {
         try {
             $authUser = $this->getAuthenticatedUser();
-            $invoice = $this->invoiceService->getById($authUser, $id);
-            return response()->json($invoice, ResponseAlias::HTTP_OK);
+            return response()->json($this->invoiceService->getById($authUser, $id), ResponseAlias::HTTP_OK);
         } catch (AuthorizationException $e) {
+            Log::error('Error retrieving invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
         } catch (Throwable $e) {
-            return response()->json(['message' => 'Server Error', 'error' => $e->getMessage()], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
+            Log::error('Error retrieving invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -150,12 +155,16 @@ class InvoiceController extends Controller
     {
         try {
             $authUser = $this->getAuthenticatedUser();
-            $invoice = $this->invoiceService->create($authUser, $request->all());
-            return response()->json($invoice, ResponseAlias::HTTP_CREATED);
+            return response()->json($this->invoiceService->create($authUser, $request->all()), ResponseAlias::HTTP_CREATED);
         } catch (AuthorizationException $e) {
+            Log::error('Error creating invoice', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
         } catch (ValidationException $e) {
+            Log::error('Error creating invoice', ['error' => $e->getMessage()]);
             return response()->json(['message' => $e->errors()], ResponseAlias::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (Throwable $e) {
+            Log::error('Error creating invoice', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -209,12 +218,16 @@ class InvoiceController extends Controller
     {
         try {
             $authUser = $this->getAuthenticatedUser();
-            $invoice = $this->invoiceService->update($authUser, $id, $request->all());
-            return response()->json($invoice, ResponseAlias::HTTP_OK);
+            return response()->json($this->invoiceService->update($authUser, $id, $request->all()), ResponseAlias::HTTP_OK);
         } catch (AuthorizationException $e) {
+            Log::error('Error updating invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
         } catch (ValidationException $e) {
+            Log::error('Error updating invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => $e->errors()], ResponseAlias::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (Throwable $e) {
+            Log::error('Error updating invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -271,7 +284,11 @@ class InvoiceController extends Controller
                 ? response()->json(['message' => 'Invoice deleted'], ResponseAlias::HTTP_OK)
                 : response()->json(['message' => 'Invoice not found'], ResponseAlias::HTTP_NOT_FOUND);
         } catch (AuthorizationException $e) {
+            Log::error('Error deleting invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Forbidden'], ResponseAlias::HTTP_FORBIDDEN);
+        } catch (Throwable $e) {
+            Log::error('Error deleting invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], ResponseAlias::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }
