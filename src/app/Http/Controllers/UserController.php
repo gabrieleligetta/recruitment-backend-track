@@ -92,7 +92,6 @@ class UserController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $this->IdValidation($id);
             $user = $this->userService->getById($id);
             return $user
                 ? response()->json($user, HTTPCode::HTTP_OK)
@@ -190,7 +189,6 @@ class UserController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         try {
-            $this->IdValidation($id);
             $authUser = $this->getAuthenticatedUser();
             $this->userService->authorizeAdminOrOwner($authUser, $id);
             $user = $this->userService->update($id, $request->all());
@@ -245,7 +243,6 @@ class UserController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $this->IdValidation($id);
             $authUser = $this->getAuthenticatedUser();
             $this->userService->authorizeAdmin($authUser);
 
