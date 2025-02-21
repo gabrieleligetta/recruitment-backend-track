@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as HTTPCode;
+use function PHPUnit\Framework\isString;
 
 abstract class Controller extends BaseController
 {
@@ -32,5 +33,20 @@ abstract class Controller extends BaseController
         }
 
         return $authUser;
+    }
+
+    /**
+     * Validate id param.
+     */
+    protected function IdValidation(int $id)
+    : JsonResponse|int
+    {
+        if (!$id) {
+            return response()->json(['message' => 'Missing Param'], HTTPCode::HTTP_BAD_REQUEST);
+        }
+        if (!isString($id)) {
+            return response()->json(['message' => 'Malformed Request'], HTTPCode::HTTP_BAD_REQUEST);
+        }
+        return $id;
     }
 }

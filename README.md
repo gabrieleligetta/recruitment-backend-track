@@ -56,7 +56,7 @@ For testing purposes, use the separate environment configuration.
 Build and start the Docker containers using Docker Compose:
 
 ```bash
-docker-compose up --build
+docker-compose up --build -d
 ```
 
 This command will build the PHP image (using the development target), start the Nginx server, and launch the PostgreSQL databases.
@@ -77,10 +77,14 @@ docker-compose exec php php artisan key:generate
 
 ### 5. Database Setup
 
-Run Laravel migrations to set up your database schema:
+Run Laravel migrations and seeders to set up your database schema:
 
 ```bash
 docker-compose exec php php artisan migrate
+```
+
+```bash
+docker-compose exec php php artisan db:seed
 ```
 
 ## Running the Application
