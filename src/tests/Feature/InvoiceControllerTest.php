@@ -5,8 +5,13 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\TaxProfile;
 use App\Models\Invoice;
+use App\Services\InvoiceService;
+use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -174,6 +179,24 @@ class InvoiceControllerTest extends TestCase
         $this->assertEquals(3, count($user2Response->json('data')));
     }
 
+    #[Test]
+    public function it_returns_server_error_on_invoice_list_exception(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the InvoiceService to throw an exception when getAll is called.
+        $this->partialMock(InvoiceService::class, function ($mock) {
+            $mock->shouldReceive('getAll')->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/invoice/list', []);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
     /*
     |--------------------------------------------------------------------------
     | TEST: Show Invoice (GET /api/invoice/{id})
@@ -210,6 +233,38 @@ class InvoiceControllerTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    #[Test]
+    public function it_returns_404_when_invoice_not_found_on_show(): void
+    {
+        $user = User::factory()->create();
+        $nonExistingId = 9999; // An ID that does not exist
+
+        $response = $this->actingAs($user, 'api')
+            ->getJson("/api/invoice/{$nonExistingId}");
+
+        $response->assertStatus(404);
+        $this->assertEquals('Invoice not found', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_invoice_show_exception(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the InvoiceService to throw an exception when getById is called.
+        $this->partialMock(InvoiceService::class, function ($mock) {
+            $mock->shouldReceive('getById')->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->getJson("/api/invoice/1");
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
 
     /*
     |--------------------------------------------------------------------------
@@ -260,6 +315,86 @@ class InvoiceControllerTest extends TestCase
         $this->assertDatabaseHas('invoices', ['invoice_number' => 'INV-2000']);
     }
 
+    #[Test]
+    public function it_returns_validation_errors_when_required_fields_are_missing_on_invoice_store(): void
+    {
+        $user = User::factory()->create();
+
+        // Simulate a validation exception by forcing the InvoiceService::create method to throw one.
+        $this->partialMock(InvoiceService::class, function ($mock) {
+            $validator = Validator::make([], ['invoice_number' => 'required']);
+            $mock->shouldReceive('create')
+                ->andThrow(new ValidationException($validator));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/invoice', [
+                //'tax_profile_id' => 1, is omitted to trigger validation error
+                'description'    => 'Test Invoice',
+                'invoice_date'   => '2025-02-01',
+                'total_amount'   => 500.00,
+                'status'         => 'pending',
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertArrayHasKey('invoice_number', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_forbidden_when_not_authorized_to_create_invoice(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the InvoiceService::create method to throw an authorization exception.
+        $this->partialMock(InvoiceService::class, function ($mock) {
+            $mock->shouldReceive('create')
+                ->andThrow(new AuthorizationException("Forbidden"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/invoice', [
+                'user_id'        => $user->id,
+                'tax_profile_id' => 1,
+                'invoice_number' => 'INV-9999',
+                'description'    => 'Test Invoice',
+                'invoice_date'   => '2025-02-01',
+                'total_amount'   => 500.00,
+                'status'         => 'pending',
+            ]);
+
+        $response->assertStatus(403);
+        $this->assertEquals('Forbidden', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_invoice_store_exception(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the InvoiceService::create method to throw a generic exception.
+        $this->partialMock(InvoiceService::class, function ($mock) {
+            $mock->shouldReceive('create')
+                ->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/invoice', [
+                'user_id'        => $user->id,
+                'tax_profile_id' => 1,
+                'invoice_number' => 'INV-1001',
+                'description'    => 'Test Invoice',
+                'invoice_date'   => '2025-02-01',
+                'total_amount'   => 500.00,
+                'status'         => 'pending',
+            ]);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+
+
     /*
     |--------------------------------------------------------------------------
     | TEST: Update Invoice (PUT /api/invoice/{id})
@@ -278,6 +413,72 @@ class InvoiceControllerTest extends TestCase
             ->putJson("/api/invoice/{$invoice->id}", ['description' => 'Updated Invoice']);
         $response->assertStatus(200);
     }
+
+    #[Test]
+    public function it_returns_404_when_invoice_not_found_on_update(): void
+    {
+        $user = User::factory()->create();
+
+        // Simulate a "not found" condition by having the update method return null.
+        $this->partialMock(InvoiceService::class, function ($mock) {
+            $mock->shouldReceive('update')->andReturn(null);
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->putJson('/api/invoice/9999', ['description' => 'Updated Invoice']);
+
+        $response->assertStatus(404);
+        $this->assertEquals('Invoice not found', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_forbidden_on_invoice_update_forbidden_exception(): void
+    {
+        $user = User::factory()->create();
+        $taxProfile = TaxProfile::factory()->create(['user_id' => $user->id]);
+        $invoice = Invoice::factory()->create([
+            'tax_profile_id' => $taxProfile->id,
+            'user_id'        => $user->id,
+        ]);
+
+        $this->partialMock(InvoiceService::class, function ($mock) use ($invoice) {
+            $mock->shouldReceive('update')
+                ->with(Mockery::any(), $invoice->id, Mockery::any())
+                ->andThrow(new AuthorizationException("Forbidden"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->putJson("/api/invoice/{$invoice->id}", ['description' => 'Updated Invoice']);
+
+        $response->assertStatus(403);
+        $this->assertEquals('Forbidden', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_invoice_update_exception(): void
+    {
+        $user = User::factory()->create();
+        $taxProfile = TaxProfile::factory()->create(['user_id' => $user->id]);
+        $invoice = Invoice::factory()->create([
+            'tax_profile_id' => $taxProfile->id,
+            'user_id'        => $user->id,
+        ]);
+
+        $this->partialMock(InvoiceService::class, function ($mock) use ($invoice) {
+            $mock->shouldReceive('update')
+                ->with(Mockery::any(), $invoice->id, Mockery::any())
+                ->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->putJson("/api/invoice/{$invoice->id}", ['description' => 'Updated Invoice']);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+
 
     /*
     |--------------------------------------------------------------------------
@@ -311,4 +512,70 @@ class InvoiceControllerTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    #[Test]
+    public function it_returns_404_when_invoice_not_found_on_destroy(): void
+    {
+        $user = User::factory()->create();
+
+        // Simulate a not found condition by having the delete method return false.
+        $this->partialMock(InvoiceService::class, function ($mock) {
+            $mock->shouldReceive('delete')->andReturn(false);
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson('/api/invoice/9999');
+
+        $response->assertStatus(404);
+        $this->assertEquals('Invoice not found', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_forbidden_on_invoice_destroy_forbidden_exception(): void
+    {
+        $user = User::factory()->create();
+        $taxProfile = TaxProfile::factory()->create(['user_id' => $user->id]);
+        $invoice = Invoice::factory()->create([
+            'tax_profile_id' => $taxProfile->id,
+            'user_id'        => $user->id,
+        ]);
+
+        $this->partialMock(InvoiceService::class, function ($mock) use ($invoice) {
+            $mock->shouldReceive('delete')
+                ->with(Mockery::any(), $invoice->id)
+                ->andThrow(new AuthorizationException("Forbidden"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/api/invoice/{$invoice->id}");
+
+        $response->assertStatus(403);
+        $this->assertEquals('Forbidden', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_invoice_destroy_exception(): void
+    {
+        $user = User::factory()->create();
+        $taxProfile = TaxProfile::factory()->create(['user_id' => $user->id]);
+        $invoice = Invoice::factory()->create([
+            'tax_profile_id' => $taxProfile->id,
+            'user_id'        => $user->id,
+        ]);
+
+        $this->partialMock(InvoiceService::class, function ($mock) use ($invoice) {
+            $mock->shouldReceive('delete')
+                ->with(Mockery::any(), $invoice->id)
+                ->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/api/invoice/{$invoice->id}");
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+
 }

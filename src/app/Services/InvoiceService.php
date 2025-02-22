@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Repositories\InvoiceRepository;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response as HTTPCode;
 use Throwable;
 
 class InvoiceService extends GeneralService
@@ -106,15 +108,16 @@ class InvoiceService extends GeneralService
     {
         try {
             $invoice = $this->invoiceRepository->findById($id);
-
             if (!$invoice) {
                 return null;
             }
 
             // Ensure only admins or the owner can view the invoice
             $this->authorizeAdminOrOwner($authUser, $invoice->user_id);
-
             return $invoice;
+        }catch (AuthorizationException $e) {
+            Log::error('Unauthorized access to invoice', ['invoice' => $id, 'user_id' => $authUser->id, 'error' => $e->getMessage()]);
+            throw new AuthorizationException('Forbidden', HTTPCode::HTTP_FORBIDDEN);
         } catch (Throwable $e) {
             Log::error('Error fetching invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
             throw $e;

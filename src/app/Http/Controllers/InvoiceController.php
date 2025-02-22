@@ -80,6 +80,15 @@ class InvoiceController extends Controller
                 content: new OA\JsonContent(ref: "#/components/schemas/Invoice")
             ),
             new OA\Response(
+                response: 404,
+                description: "Invoice not found",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Invoice not found")
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 403,
                 description: "Forbidden",
                 content: new OA\JsonContent(
@@ -104,7 +113,12 @@ class InvoiceController extends Controller
     {
         try {
             $authUser = $this->getAuthenticatedUser();
-            return response()->json($this->invoiceService->getById($authUser, $id), HTTPCode::HTTP_OK);
+            $invoice = $this->invoiceService->getById($authUser, $id);
+
+
+            return $invoice
+                ? response()->json($invoice, HTTPCode::HTTP_OK)
+                : $this->errorResponse('Invoice not found', HTTPCode::HTTP_NOT_FOUND);
         } catch (AuthorizationException $e) {
             Log::error('Error retrieving invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Forbidden'], HTTPCode::HTTP_FORBIDDEN);
@@ -204,6 +218,15 @@ class InvoiceController extends Controller
                 )
             ),
             new OA\Response(
+                response: 404,
+                description: "Invoice not found",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Invoice not found")
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 422,
                 description: "Validation errors",
                 content: new OA\JsonContent(
@@ -218,7 +241,11 @@ class InvoiceController extends Controller
     {
         try {
             $authUser = $this->getAuthenticatedUser();
-            return response()->json($this->invoiceService->update($authUser, $id, $request->all()), HTTPCode::HTTP_OK);
+            $invoice = $this->invoiceService->update($authUser, $id, $request->all());
+
+            return $invoice
+                ? response()->json($invoice, HTTPCode::HTTP_OK)
+                : $this->errorResponse('Invoice not found', HTTPCode::HTTP_NOT_FOUND);
         } catch (AuthorizationException $e) {
             Log::error('Error updating invoice', ['invoice_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Forbidden'], HTTPCode::HTTP_FORBIDDEN);

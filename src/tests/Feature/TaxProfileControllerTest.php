@@ -4,8 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Models\TaxProfile;
+use App\Services\TaxProfileService;
+use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -162,6 +167,25 @@ class TaxProfileControllerTest extends TestCase
         $this->assertEquals(3, count($user2Response->json('data')));
     }
 
+    #[Test]
+    public function it_returns_server_error_on_list_exception(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the service to throw an exception when getAll is called
+        $this->partialMock(TaxProfileService::class, function ($mock) {
+            $mock->shouldReceive('getAll')->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/tax-profile/list', []);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+
     /*
     |--------------------------------------------------------------------------
     | TEST: Show Tax Profile (GET /api/tax-profile/{id})
@@ -196,6 +220,40 @@ class TaxProfileControllerTest extends TestCase
 
         $response->assertStatus(403); //Expect forbidden
     }
+
+    #[Test]
+    public function it_returns_404_when_tax_profile_not_found_in_show(): void
+    {
+        $user = User::factory()->create();
+
+        // Use an ID that doesn’t exist
+        $nonExistingId = 9999;
+
+        $response = $this->actingAs($user, 'api')
+            ->getJson("/api/tax-profile/{$nonExistingId}");
+
+        $response->assertStatus(404);
+        $this->assertEquals('Tax Profile not found', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_show_exception(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the service to throw an exception when getById is called
+        $this->partialMock(TaxProfileService::class, function ($mock) {
+            $mock->shouldReceive('getById')->andThrow(new Exception("Simulated exception"));
+        });
+
+        // Use any ID, as the exception will be thrown before lookup
+        $response = $this->actingAs($user, 'api')
+            ->getJson("/api/tax-profile/1");
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
 
 
     /*
@@ -244,6 +302,84 @@ class TaxProfileControllerTest extends TestCase
         $this->assertDatabaseHas('tax_profiles', ['company_name' => 'Admin Created Co']);
     }
 
+    #[Test]
+    public function it_returns_validation_errors_when_required_fields_are_missing_on_store(): void
+    {
+        $user = User::factory()->create();
+
+        // Simulate a validation exception by forcing the service to throw one.
+        $this->partialMock(TaxProfileService::class, function ($mock) {
+            $validator = Validator::make([], ['tax_id' => 'required']);
+            $mock->shouldReceive('create')
+                ->andThrow(new ValidationException($validator));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/tax-profile', [
+                // Missing the 'tax_id' field
+                'company_name' => 'Test Company',
+                'address'      => 'Test Address',
+                'country'      => 'USA',
+                'city'         => 'Test City',
+                'zip_code'     => '12345'
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertArrayHasKey('tax_id', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_forbidden_when_not_authorized_to_create_tax_profile(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the service to throw an authorization exception
+        $this->partialMock(TaxProfileService::class, function ($mock) {
+            $mock->shouldReceive('create')
+                ->andThrow(new AuthorizationException("Forbidden"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/tax-profile', [
+                'tax_id'       => 'TX-999',
+                'company_name' => 'Test Company',
+                'address'      => 'Test Address',
+                'country'      => 'USA',
+                'city'         => 'Test City',
+                'zip_code'     => '12345'
+            ]);
+
+        $response->assertStatus(403);
+        $this->assertEquals('Forbidden', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_store_exception(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the service to throw a generic exception when create is called
+        $this->partialMock(TaxProfileService::class, function ($mock) {
+            $mock->shouldReceive('create')
+                ->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/tax-profile', [
+                'tax_id'       => 'TX-123',
+                'company_name' => 'Test Company',
+                'address'      => 'Test Address',
+                'country'      => 'USA',
+                'city'         => 'Test City',
+                'zip_code'     => '12345'
+            ]);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+
     /*
     |--------------------------------------------------------------------------
     | TEST: Update Tax Profile (PUT /api/tax-profile/{id})
@@ -289,6 +425,63 @@ class TaxProfileControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
+    #[Test]
+    public function it_returns_404_when_tax_profile_not_found_on_update(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the update method to return null to simulate not found
+        $this->partialMock(TaxProfileService::class, function ($mock) {
+            $mock->shouldReceive('update')->andReturn(null);
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->putJson('/api/tax-profile/9999', ['company_name' => 'Updated Name']);
+
+        $response->assertStatus(404);
+        $this->assertEquals('Tax Profile not found', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_update_exception(): void
+    {
+        $user = User::factory()->create();
+        $profile = TaxProfile::factory()->create(['user_id' => $user->id]);
+
+        $this->partialMock(TaxProfileService::class, function ($mock) use ($profile) {
+            $mock->shouldReceive('update')
+                ->with(Mockery::any(), $profile->id, Mockery::any())
+                ->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->putJson("/api/tax-profile/{$profile->id}", ['company_name' => 'Updated Name']);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_forbidden_on_update_forbidden_exception(): void
+    {
+        $user = User::factory()->create();
+        $profile = TaxProfile::factory()->create(['user_id' => $user->id]);
+
+        $this->partialMock(TaxProfileService::class, function ($mock) use ($profile) {
+            $mock->shouldReceive('update')
+                ->with(Mockery::any(), $profile->id, Mockery::any())
+                ->andThrow(new AuthorizationException("Forbidden"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->putJson("/api/tax-profile/{$profile->id}", ['company_name' => 'Updated Name']);
+
+        $response->assertStatus(403);
+        $this->assertEquals('Forbidden', $response->json('message'));
+    }
+
+
+
     /*
     |--------------------------------------------------------------------------
     | TEST: Delete Tax Profile (DELETE /api/tax-profile/{id})
@@ -326,4 +519,61 @@ class TaxProfileControllerTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    #[Test]
+    public function it_returns_404_when_tax_profile_not_found_on_destroy(): void
+    {
+        $user = User::factory()->create();
+
+        // Force the delete method to return false to simulate not found
+        $this->partialMock(TaxProfileService::class, function ($mock) {
+            $mock->shouldReceive('delete')->andReturn(false);
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson('/api/tax-profile/9999');
+
+        $response->assertStatus(404);
+        $this->assertEquals('Tax Profile not found', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_destroy_exception(): void
+    {
+        $user = User::factory()->create();
+        $profile = TaxProfile::factory()->create(['user_id' => $user->id]);
+
+        $this->partialMock(TaxProfileService::class, function ($mock) use ($profile) {
+            $mock->shouldReceive('delete')
+                ->with(Mockery::any(), $profile->id)
+                ->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/api/tax-profile/{$profile->id}");
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_forbidden_on_destroy_forbidden_exception(): void
+    {
+        $user = User::factory()->create();
+        $profile = TaxProfile::factory()->create(['user_id' => $user->id]);
+
+        $this->partialMock(TaxProfileService::class, function ($mock) use ($profile) {
+            $mock->shouldReceive('delete')
+                ->with(Mockery::any(), $profile->id)
+                ->andThrow(new AuthorizationException("Forbidden"));
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/api/tax-profile/{$profile->id}");
+
+        $response->assertStatus(403);
+        $this->assertEquals('Forbidden', $response->json('message'));
+    }
+
+
 }

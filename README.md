@@ -87,6 +87,10 @@ docker-compose exec php php artisan migrate
 docker-compose exec php php artisan db:seed
 ```
 
+Seeding will create an Admin, credentials for login as admin are:
+- admin@example.com
+- defaultPassword
+
 ## Running the Application
 
 Once the containers are running, access the application at [http://localhost](http://localhost). Nginx serves the application from the `public` directory inside the Laravel app.

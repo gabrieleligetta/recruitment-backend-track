@@ -3,8 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\UserService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -246,6 +250,24 @@ class UserControllerTest extends TestCase
     }
 
     #[Test]
+    public function it_returns_server_error_on_user_list_exception(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Force the UserService::getAll method to throw an exception.
+        $this->partialMock(UserService::class, function ($mock) {
+            $mock->shouldReceive('getAll')->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($admin, 'api')
+            ->postJson('/api/user/list', []);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+    #[Test]
     public function it_can_list_users_as_user(): void
     {
         // Create an admin user to authenticate
@@ -365,6 +387,25 @@ class UserControllerTest extends TestCase
         $response->assertJson(['message' => 'User not found']);
     }
 
+    #[Test]
+    public function it_returns_server_error_on_user_show_exception(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Force the UserService::getById method to throw an exception.
+        $this->partialMock(UserService::class, function ($mock) {
+            $mock->shouldReceive('getById')->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($admin, 'api')
+            ->getJson("/api/user/1");
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+
     /*
     |--------------------------------------------------------------------------
     | TEST: Create User (POST /api/user)
@@ -402,6 +443,56 @@ class UserControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
+    #[Test]
+    public function it_returns_validation_errors_on_user_store_when_required_fields_missing(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Simulate a validation exception by forcing the create method to throw one.
+        $this->partialMock(UserService::class, function ($mock) {
+            $validator = Validator::make([], [
+                'name'  => 'required',
+                'email' => 'required|email',
+            ]);
+            $mock->shouldReceive('create')
+                ->andThrow(new ValidationException($validator));
+        });
+
+        $response = $this->actingAs($admin, 'api')
+            ->postJson('/api/user', [
+                // Omitting 'name' and providing an invalid 'email'
+                'email'    => 'not-an-email',
+                'password' => 'password123'
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertArrayHasKey('name', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_user_store_exception(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Force the UserService::create method to throw a generic exception.
+        $this->partialMock(UserService::class, function ($mock) {
+            $mock->shouldReceive('create')->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($admin, 'api')
+            ->postJson('/api/user', [
+                'name'     => 'Test User',
+                'email'    => 'test@example.com',
+                'password' => 'password123'
+            ]);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+
+
     /*
     |--------------------------------------------------------------------------
     | TEST: Update User (PUT /api/user/{id})
@@ -437,6 +528,43 @@ class UserControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
+    #[Test]
+    public function it_returns_404_when_user_not_found_on_update(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Simulate a "not found" condition by having the update method return null.
+        $this->partialMock(UserService::class, function ($mock) {
+            $mock->shouldReceive('update')->andReturn(null);
+        });
+
+        $response = $this->actingAs($admin, 'api')
+            ->putJson('/api/user/9999', ['name' => 'Updated Name']);
+
+        $response->assertStatus(404);
+        $this->assertEquals('User not found', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_user_update_exception(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $existingUser = User::factory()->create();
+
+        // Force the UserService::update method to throw an exception.
+        $this->partialMock(UserService::class, function ($mock) use ($existingUser) {
+            $mock->shouldReceive('update')->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($admin, 'api')
+            ->putJson("/api/user/{$existingUser->id}", ['name' => 'Updated Name']);
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
+
     /*
     |--------------------------------------------------------------------------
     | TEST: Delete User (DELETE /api/user/{id})
@@ -467,4 +595,41 @@ class UserControllerTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    #[Test]
+    public function it_returns_404_when_user_not_found_on_delete(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Simulate a not found condition by having the delete method return false.
+        $this->partialMock(UserService::class, function ($mock) {
+            $mock->shouldReceive('delete')->andReturn(false);
+        });
+
+        $response = $this->actingAs($admin, 'api')
+            ->deleteJson("/api/user/9999");
+
+        $response->assertStatus(404);
+        $this->assertEquals('User not found', $response->json('message'));
+    }
+
+    #[Test]
+    public function it_returns_server_error_on_user_delete_exception(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $existingUser = User::factory()->create();
+
+        // Force the UserService::delete method to throw an exception.
+        $this->partialMock(UserService::class, function ($mock) use ($existingUser) {
+            $mock->shouldReceive('delete')->andThrow(new Exception("Simulated exception"));
+        });
+
+        $response = $this->actingAs($admin, 'api')
+            ->deleteJson("/api/user/{$existingUser->id}");
+
+        $response->assertStatus(500);
+        $this->assertEquals('Server Error', $response->json('message'));
+    }
+
+
 }
